@@ -86,7 +86,7 @@ new file mode 100644
 diff --git a/expansion/build.gradle b/expansion/build.gradle
 --- a/expansion/build.gradle
 +++ b/expansion/build.gradle
-@@ -23,6 +23,7 @@ dependencies {
+@@ -23,4 +23,5 @@ dependencies {
      accessTransformers "io.codechicken:CBMultipart:${mc_version}-${cbm_version}"
 
      compileOnly project(":api")
