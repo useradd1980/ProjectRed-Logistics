@@ -15,12 +15,12 @@
 - [x] Implement NBT persistence and packet description serialization in patch 0001.
 - [x] Add four focused JUnit tests (execution pending in CI).
 - [ ] Confirm full dependency-resolved ProjectRed test/build passes.
-- [ ] Add `PneumaticRoutePolicy` registration.
-- [ ] Add `PneumaticRouteContext`.
-- [ ] Add `PneumaticRouteDecision`.
-- [ ] Integrate policy evaluation without making the whole topology graph
-      payload-specific.
-- [ ] Add a test proving a longer allowed path beats a shorter blocked path.
+- [x] Prototype `PneumaticRoutePolicy` registration in upstream patch 0002.
+- [x] Prototype stable `PneumaticRouteContext` and routing-node context in patch 0002.
+- [x] Prototype `PneumaticRouteDecision` with allow/block and non-negative added cost.
+- [x] Prototype payload-aware Dijkstra routing over ProjectRed's cached graph links.
+- [x] Add routing-significant-node hook so restricted tubes are not hidden inside compressed links.
+- [ ] Add an integration-style graph test proving a longer allowed path beats a shorter blocked path.
 - [ ] Confirm behaviour is identical when no policies are registered.
 
 ## Milestone 2 — ProjectRed Logistics integration
