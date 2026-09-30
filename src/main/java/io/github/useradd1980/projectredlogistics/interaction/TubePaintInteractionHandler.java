@@ -4,6 +4,7 @@ import codechicken.multipart.block.BlockMultipart;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.api.ProjectRedAPI;
 import mrtjp.projectred.api.pneumatics.PneumaticTube;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.DyeItem;
@@ -54,6 +55,9 @@ public final class TubePaintInteractionHandler {
             if (current.isPresent() && current.getAsInt() == colour) return;
 
             LogisticsRoutingData.setTubeColour(tube, colour);
+            player.displayClientMessage(
+                    Component.literal("Tube painted " + dye.getDyeColor().getName()),
+                    false);
 
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
@@ -69,6 +73,9 @@ public final class TubePaintInteractionHandler {
 
             if (!level.isClientSide()) {
                 LogisticsRoutingData.clearTubeColour(tube);
+                player.displayClientMessage(
+                        Component.literal("Tube paint cleared"),
+                        false);
             }
         }
     }
