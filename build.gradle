@@ -50,9 +50,9 @@ dependencies {
         // AUTO_GENERATED_VERSION=5.0-logistics-dev ./gradlew publishToMavenLocal
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
 
-        // The local ProjectRed publication is classifier-based and does not
-        // contribute transitive runtime dependencies, so list them explicitly.
-        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+        // ModDev already places the compileOnly API on the development module
+        // path. Adding the API again as runtimeOnly creates a duplicate Java
+        // module, so only the actual runtime modules are listed here.
         runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
         runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
         runtimeOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
