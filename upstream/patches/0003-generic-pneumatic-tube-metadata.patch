@@ -1,28 +1,41 @@
 diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
 --- a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
 +++ b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
-@@
+@@ -1,13 +1,15 @@
+ package mrtjp.projectred.api;
+ 
  import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
 +import mrtjp.projectred.api.pneumatics.PneumaticTube;
-@@
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.resources.ResourceLocation;
  import net.minecraft.world.level.Level;
-@@
+ import net.minecraft.world.level.block.Block;
+ import net.neoforged.neoforge.capabilities.BlockCapability;
+ 
  import java.util.Set;
 +import javax.annotation.Nullable;
-@@
+ 
+ public interface IExpansionAPI {
+ 
+@@ -47,6 +49,13 @@ public interface IExpansionAPI {
+      */
      void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy);
-+
+ 
 +    /**
-+     * Returns the pneumatic tube occupying the center multipart slot at pos,
-+     * or null if no pneumatic tube is present.
++     * Returns the pneumatic tube occupying the center multipart slot at the
++     * supplied position, or null when no pneumatic tube is present.
 +     */
 +    @Nullable
 +    PneumaticTube getPneumaticTube(Level level, BlockPos pos);
++
+     /**
+      * Registers a {@link MovingBlockEntityRenderCallback} object to receive callbacks for block entities
+      * that render while moving
 diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java
-@@
+@@ -0,0 +1,34 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +import net.minecraft.core.BlockPos;
@@ -35,19 +48,21 @@ new file mode 100644
 +/**
 + * Public view of a ProjectRed pneumatic tube.
 + *
-+ * Namespaced custom data belongs to the tube part and is persisted/synchronised
-+ * by ProjectRed. Mutations should be performed on the logical server.
++ * Namespaced custom data belongs to the tube part itself and is persisted and
++ * synchronized by ProjectRed. Mutations should be performed on the logical
++ * server.
 + */
 +public interface PneumaticTube {
 +
-+    Level getLevel();
++    Level level();
 +
-+    BlockPos getPos();
++    BlockPos pos();
 +
 +    boolean hasData(ResourceLocation key);
 +
 +    /** Returns a defensive copy, or null when absent. */
-+    @Nullable CompoundTag getData(ResourceLocation key);
++    @Nullable
++    CompoundTag getData(ResourceLocation key);
 +
 +    /** Stores a defensive copy and invalidates routing topology as needed. */
 +    void setData(ResourceLocation key, CompoundTag value);
@@ -59,7 +74,7 @@ diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeData
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeData.java
-@@
+@@ -0,0 +1,48 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +import net.minecraft.nbt.CompoundTag;
@@ -77,7 +92,9 @@ new file mode 100644
 +    private CompoundTag data = new CompoundTag();
 +
 +    public boolean has(ResourceLocation key) {
-+        return data.contains(Objects.requireNonNull(key, "key").toString(), Tag.TAG_COMPOUND);
++        return data.contains(
++                Objects.requireNonNull(key, "key").toString(),
++                Tag.TAG_COMPOUND);
 +    }
 +
 +    public @Nullable CompoundTag get(ResourceLocation key) {
@@ -85,7 +102,8 @@ new file mode 100644
 +    }
 +
 +    public void put(ResourceLocation key, CompoundTag value) {
-+        data.put(Objects.requireNonNull(key, "key").toString(),
++        data.put(
++                Objects.requireNonNull(key, "key").toString(),
 +                Objects.requireNonNull(value, "value").copy());
 +    }
 +
@@ -108,50 +126,79 @@ new file mode 100644
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
 --- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
-@@
+@@ -1,8 +1,11 @@
+ package mrtjp.projectred.expansion;
+ 
+ import mrtjp.projectred.api.*;
++import codechicken.multipart.block.TileMultipart;
  import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
 +import mrtjp.projectred.api.pneumatics.PneumaticTube;
+ import mrtjp.projectred.expansion.client.MovementClientRegistry;
 +import mrtjp.projectred.expansion.part.PneumaticTubePart;
-+import codechicken.multipart.block.TileMultipart;
-@@
  import net.minecraft.core.BlockPos;
-@@
- public class ExpansionAPI implements IExpansionAPI {
-@@
-     public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.Block;
+@@ -21,6 +24,15 @@ public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
          PneumaticRouteRegistry.register(policy);
      }
-+
+ 
 +    @Override
 +    public PneumaticTube getPneumaticTube(Level level, BlockPos pos) {
 +        var tile = level.getBlockEntity(pos);
 +        if (!(tile instanceof TileMultipart multipart)) return null;
++
 +        var part = multipart.getSlottedPart(6);
 +        return part instanceof PneumaticTubePart tube ? tube : null;
 +    }
++
+     @Override
+     public void registerBlockMover(Block block, BlockMover mover) {
+         MovementRegistry.registerBlockMover(block, mover);
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 --- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
-@@
+@@ -7,6 +7,8 @@
+ import codechicken.multipart.block.TileMultipart;
+ import mrtjp.projectred.api.IConnectable;
  import mrtjp.projectred.api.pneumatics.PneumaticRouteNodeContext;
 +import mrtjp.projectred.api.pneumatics.PneumaticTube;
 +import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
-@@
+ import mrtjp.projectred.core.CenterLookup;
+ import mrtjp.projectred.expansion.PneumaticRouteRegistry;
+ import mrtjp.projectred.expansion.TubeType;
+@@ -21,6 +23,8 @@
+ import net.minecraft.core.Direction;
+ import net.minecraft.core.HolderLookup;
  import net.minecraft.nbt.CompoundTag;
 +import net.minecraft.nbt.Tag;
 +import net.minecraft.resources.ResourceLocation;
-@@
+ import net.minecraft.sounds.SoundSource;
+ import net.minecraft.world.WorldlyContainer;
+ import net.minecraft.world.item.ItemStack;
+@@ -37,17 +41,21 @@
+ import static mrtjp.projectred.core.client.particle.ParticleAction.*;
+ import static mrtjp.projectred.expansion.ProjectRedExpansion.LOGGER;
+ 
 -public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart {
 +public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart, PneumaticTube {
-@@
+ 
+     private static final int KEY_NEW_PAYLOAD = 0x10;
+     private static final int KEY_PAYLOAD_UPDATE = 0x11;
+     private static final int KEY_PAYLOAD_HANDOFF = 0x12;
+     private static final int KEY_PAYLOAD_REMOVE = 0x13;
+     private static final int KEY_NODE_LINKS_UPDATE = 0x14;
      private static final int KEY_NODE_STATE_UPDATE = 0x15;
 +    private static final int KEY_TUBE_DATA_UPDATE = 0x16;
++
 +    private static final String TUBE_DATA_KEY = "projectred_tube_data";
-@@
+ 
+     public final ClientSideLinkCache linkCache = new ClientSideLinkCache();
      private final PneumaticTransport transport = new PneumaticTransport(this);
 +    private final PneumaticTubeData customData = new PneumaticTubeData();
-@@
-     public void save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+ 
+     private int lastRoundRobinDir = -1;
+ 
+@@ -70,27 +78,37 @@ public void save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
          super.save(tag, lookupProvider);
          tag.putByte("last_dir", (byte) lastRoundRobinDir);
          transport.save(tag, lookupProvider);
@@ -161,29 +208,37 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
 +            tag.put(TUBE_DATA_KEY, customData.save());
 +        }
      }
-@@
+ 
+     @Override
      public void load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
          super.load(tag, lookupProvider);
          lastRoundRobinDir = tag.getByte("last_dir");
          transport.load(tag, lookupProvider);
 +        customData.load(tag.contains(TUBE_DATA_KEY, Tag.TAG_COMPOUND)
-+                ? tag.getCompound(TUBE_DATA_KEY) : new CompoundTag());
++                ? tag.getCompound(TUBE_DATA_KEY)
++                : new CompoundTag());
      }
-@@
+ 
+     @Override
      public void writeDesc(MCDataOutput packet) {
          super.writeDesc(packet);
          transport.writeDesc(packet);
          linkCache.writeDesc(packet);
 +        packet.writeCompoundNBT(customData.save());
      }
-@@
+ 
+     @Override
      public void readDesc(MCDataInput packet) {
          super.readDesc(packet);
          transport.readDesc(packet);
          linkCache.readDesc(packet);
 +        customData.load(packet.readCompoundNBT());
      }
-@@
+     //endregion
+ 
+@@ -117,6 +135,10 @@ protected void read(MCDataInput packet, int key) {
+             case KEY_PAYLOAD_REMOVE -> readPayloadRemoved(packet);
+             case KEY_NODE_LINKS_UPDATE -> linkCache.readLinkUpdate(packet);
              case KEY_NODE_STATE_UPDATE -> linkCache.readStateUpdate(packet);
 +            case KEY_TUBE_DATA_UPDATE -> {
 +                customData.load(packet.readCompoundNBT());
@@ -192,28 +247,30 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
              default -> super.read(packet, key);
          }
      }
-+
+@@ -161,6 +183,18 @@ private void sendNodeStateUpdate() {
+         sendUpdate(KEY_NODE_STATE_UPDATE, linkCache::writeStateUpdate);
+     }
+ 
 +    private void sendTubeDataUpdate() {
 +        sendUpdate(KEY_TUBE_DATA_UPDATE, out -> out.writeCompoundNBT(customData.save()));
 +    }
 +
 +    private void onTubeDataChanged() {
 +        if (level().isClientSide) return;
++
++        tile().setChanged();
 +        node.markLinksChanged();
 +        sendTubeDataUpdate();
 +    }
 +
+     private void readPayloadHandoff(MCDataInput packet) {
+         int id = packet.readInt();
+         PneumaticTubePayload payload = transport.removePayload(id);
+@@ -187,6 +221,32 @@ private void readPayloadRemoved(MCDataInput packet) {
+     }
+     //endregion
+ 
 +    //region PneumaticTube API
-+    @Override
-+    public net.minecraft.world.level.Level getLevel() {
-+        return level();
-+    }
-+
-+    @Override
-+    public net.minecraft.core.BlockPos getPos() {
-+        return pos();
-+    }
-+
 +    @Override
 +    public boolean hasData(ResourceLocation key) {
 +        return customData.has(key);
@@ -232,15 +289,21 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
 +
 +    @Override
 +    public void removeData(ResourceLocation key) {
++        if (!customData.has(key)) return;
++
 +        customData.remove(key);
 +        onTubeDataChanged();
 +    }
 +    //endregion
++
+     //region MultiPart events
+     @Override
+     public void onRemoved() {
 diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java
-@@
+@@ -0,0 +1,42 @@
 +package mrtjp.projectred.expansion.pneumatics;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
@@ -276,9 +339,9 @@ new file mode 100644
 +        assertFalse(data.has(COLOUR));
 +        assertNull(data.get(COLOUR));
 +
-+        var value = new CompoundTag();
-+        data.put(COLOUR, value);
++        data.put(COLOUR, new CompoundTag());
 +        assertTrue(data.has(COLOUR));
++
 +        data.remove(COLOUR);
 +        assertFalse(data.has(COLOUR));
 +    }
