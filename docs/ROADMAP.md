@@ -10,10 +10,11 @@
 
 ## Milestone 1 — Generic pneumatic API prototype
 
-- [ ] Add public `PneumaticPayload` abstraction.
-- [ ] Add namespaced payload metadata.
-- [ ] Persist metadata through NBT.
-- [ ] Synchronize metadata to clients.
+- [x] Prototype public `PneumaticPayload` abstraction in upstream patch 0001.
+- [x] Prototype namespaced payload metadata with defensive copies.
+- [x] Implement NBT persistence and packet description serialization in patch 0001.
+- [x] Add four focused JUnit tests (execution pending in CI).
+- [ ] Confirm full dependency-resolved ProjectRed test/build passes.
 - [ ] Add `PneumaticRoutePolicy` registration.
 - [ ] Add `PneumaticRouteContext`.
 - [ ] Add `PneumaticRouteDecision`.

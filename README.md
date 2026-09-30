@@ -36,3 +36,10 @@ Manager.
 ## License
 
 MIT.
+
+## Current API development
+
+The first upstream API prototype is committed at
+[`upstream/patches/0001-generic-pneumatic-payload-metadata.patch`](upstream/patches/0001-generic-pneumatic-payload-metadata.patch).
+It targets ProjectRed's pinned 1.21.1 source, not the published 4.23.0 API.
+See [upstream/README.md](upstream/README.md) for application and test steps.

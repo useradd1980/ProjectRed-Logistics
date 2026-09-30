@@ -39,7 +39,22 @@ public interface PneumaticPayload {
 }
 ```
 
-ProjectRed's internal `PneumaticTubePayload` implements this interface.
+ProjectRed's internal `PneumaticTubePayload` implements this interface. The
+first prototype patch introduces `PneumaticPayloadData` as the reusable
+storage helper. Its compound-valued keys are `ResourceLocation` namespaced
+identifiers, and all set/get/save/load methods defensively copy mutable NBT.
+
+The patch stores the entire metadata compound under
+`projectred_payload_data` on the payload itself (not on the ItemStack).
+Missing data in an existing/older saved payload becomes an empty container.
+For client updates it uses CodeChickenLib's `writeCompoundNBT` and
+`readCompoundNBT` helpers in the payload's existing description codec.
+
+Patch location:
+`upstream/patches/0001-generic-pneumatic-payload-metadata.patch`.
+
+ProjectRed's published 4.23.0 artifacts do **not** contain this proposed API;
+the standalone addon does not yet call it.
 
 Metadata must survive:
 

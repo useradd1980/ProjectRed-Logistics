@@ -1,0 +1,51 @@
+name: Generic pneumatic API prototype
+
+on:
+  push:
+    branches:
+      - feat/pneumatic-payload-metadata
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'upstream/**'
+      - '.github/workflows/pneumatic-api.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-upstream-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ProjectRed Logistics
+        uses: actions/checkout@v4
+
+      - name: Check out pinned ProjectRed baseline
+        uses: actions/checkout@v4
+        with:
+          repository: MrTJP/ProjectRed
+          ref: e631f983c9b31c79f04deffa92ae5e68468326a0
+          path: projectred
+          persist-credentials: false
+
+      - name: Verify and apply metadata patch
+        working-directory: projectred
+        run: |
+          PATCH="$GITHUB_WORKSPACE/upstream/patches/0001-generic-pneumatic-payload-metadata.patch"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
+          git diff --check
+
+      - name: Install Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test API and compile ProjectRed Expansion
+        working-directory: projectred
+        run: ./gradlew :api:test :expansion:compileJava --no-daemon
