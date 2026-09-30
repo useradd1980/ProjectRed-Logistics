@@ -12,8 +12,9 @@ import mrtjp.projectred.api.pneumatics.PneumaticTube;
  * RP2-style colour restrictions implemented entirely as a consumer of the
  * generic ProjectRed pneumatic API.
  *
- * Unpainted tubes are neutral. A painted tube only admits payloads carrying the
- * same colour. Uncoloured payloads therefore cannot enter painted routes.
+ * Unpainted tubes are neutral. Uncoloured payloads may use any tube. Coloured
+ * payloads may use unpainted tubes or a tube painted with the same colour, but
+ * may not enter a differently coloured tube.
  */
 public final class LogisticsColourRoutePolicy implements PneumaticRoutePolicy {
 
@@ -33,17 +34,24 @@ public final class LogisticsColourRoutePolicy implements PneumaticRoutePolicy {
         }
 
         var tubeColour = LogisticsRoutingData.getTubeColour(tube);
+
+        // Unpainted tubes are always neutral.
         if (tubeColour.isEmpty()) {
             return PneumaticRouteDecision.PASS;
         }
 
         var payloadColour = LogisticsRoutingData.getPayloadColour(payload);
-        if (payloadColour.isPresent()
-                && payloadColour.getAsInt() == tubeColour.getAsInt()) {
+
+        // Ordinary payloads from Block Breakers, Transposers, etc. are
+        // uncoloured and may travel through painted tubes.
+        if (payloadColour.isEmpty()) {
             return PneumaticRouteDecision.PASS;
         }
 
-        return PneumaticRouteDecision.BLOCK;
+        // Only explicitly coloured payloads are restricted by tube colour.
+        return payloadColour.getAsInt() == tubeColour.getAsInt()
+                ? PneumaticRouteDecision.PASS
+                : PneumaticRouteDecision.BLOCK;
     }
 
     @Override
