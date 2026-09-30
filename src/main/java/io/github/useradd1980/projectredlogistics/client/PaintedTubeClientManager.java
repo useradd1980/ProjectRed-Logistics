@@ -39,20 +39,13 @@ import java.util.Map;
 /**
  * Client-side cache and renderer for painted ProjectRed pneumatic tubes.
  *
- * ProjectRed continues rendering the normal tube. This manager draws a second,
- * slightly expanded translucent copy of the same tube mesh to represent paint.
+ * ProjectRed continues rendering the normal brass tube. This manager reuses
+ * ProjectRed's separate inner "wire" mesh as the painted routing channel,
+ * leaving the outer tube frame untouched.
  */
 public final class PaintedTubeClientManager {
 
     private static final Map<BlockPos, Integer> PAINTED_TUBES = new HashMap<>();
-
-    // Slight expansion prevents the paint pass from z-fighting with ProjectRed's
-    // normal tube surface.
-    private static final float PAINT_SCALE = 1.003F;
-
-    // CCL colours are packed RGBA. This opacity keeps the original tube details
-    // visible underneath the paint layer.
-    private static final int PAINT_ALPHA = 0xB0;
 
     private PaintedTubeClientManager() { }
 
@@ -152,7 +145,7 @@ public final class PaintedTubeClientManager {
             renderPaintedTube(part, entry.getValue(), pos, camera, poseStack, buffers, level);
         }
 
-        buffers.endBatch(RenderType.translucent());
+        buffers.endBatch(RenderType.cutout());
     }
 
     private static void scanChunk(Level level, LevelChunk chunk) {
@@ -188,11 +181,6 @@ public final class PaintedTubeClientManager {
         poseStack.pushPose();
         poseStack.translate(pos.getX() - camera.x, pos.getY() - camera.y, pos.getZ() - camera.z);
 
-        // Grow around the block centre, rather than away from the origin.
-        poseStack.translate(0.5D, 0.5D, 0.5D);
-        poseStack.scale(PAINT_SCALE, PAINT_SCALE, PAINT_SCALE);
-        poseStack.translate(-0.5D, -0.5D, -0.5D);
-
         CCRenderState ccrs = CCRenderState.instance();
         ccrs.reset();
         ccrs.brightness = LightTexture.pack(
@@ -201,13 +189,16 @@ public final class PaintedTubeClientManager {
         ccrs.overlay = OverlayTexture.NO_OVERLAY;
         ccrs.bind(
                 new TransformingVertexConsumer(
-                        buffers.getBuffer(RenderType.translucent()),
+                        buffers.getBuffer(RenderType.cutout()),
                         poseStack),
                 DefaultVertexFormat.BLOCK);
 
-        int rgba = EnumColour.fromDyeMeta(dyeColour).rgba(PAINT_ALPHA);
+        int rgba = EnumColour.fromDyeMeta(dyeColour).rgba();
 
-        TubeModelRenderer.getOrGeneratePipeModel(part.getConnMap()).render(
+        // ProjectRed's wire mesh is a distinct inner-channel model. It is the
+        // same geometry ProjectRed uses for redstone inside tubes, and its
+        // texture region is intended to be colour-multiplied.
+        TubeModelRenderer.getOrGenerateWireModel(part.getConnMap()).render(
                 ccrs,
                 new IconTransformation(part.getIcon()),
                 ColourMultiplier.instance(rgba));
