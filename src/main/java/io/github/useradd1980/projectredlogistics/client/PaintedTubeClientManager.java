@@ -10,7 +10,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.api.ProjectRedAPI;
 import mrtjp.projectred.api.pneumatics.PneumaticTube;
-import mrtjp.projectred.expansion.client.TubeModelRenderer;
 import mrtjp.projectred.expansion.part.PneumaticTubePart;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
@@ -193,12 +192,12 @@ public final class PaintedTubeClientManager {
                         poseStack),
                 DefaultVertexFormat.BLOCK);
 
-        int rgba = EnumColour.fromDyeMeta(dyeColour).rgba();
+        // Minecraft DyeColor IDs already use white=0 .. black=15, matching
+        // EnumColour's declaration order. Do not use fromDyeMeta(), which is a
+        // legacy reverse-order conversion.
+        int rgba = EnumColour.values()[dyeColour & 0xF].rgba();
 
-        // ProjectRed's wire mesh is a distinct inner-channel model. It is the
-        // same geometry ProjectRed uses for redstone inside tubes, and its
-        // texture region is intended to be colour-multiplied.
-        TubeModelRenderer.getOrGenerateWireModel(part.getConnMap()).render(
+        PaintedTubeInnerModelRenderer.getOrGenerateModel(part.getConnMap()).render(
                 ccrs,
                 new IconTransformation(part.getIcon()),
                 ColourMultiplier.instance(rgba));
