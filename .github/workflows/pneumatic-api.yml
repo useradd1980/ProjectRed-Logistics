@@ -48,4 +48,4 @@ jobs:
 
       - name: Test API and compile ProjectRed Expansion
         working-directory: projectred
-        run: ./gradlew :api:test :expansion:compileJava --no-daemon
+        run: ./gradlew :api:compileJava :expansion:test :expansion:compileJava --no-daemon
