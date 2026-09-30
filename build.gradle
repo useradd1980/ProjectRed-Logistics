@@ -51,6 +51,7 @@ dependencies {
         // Patched ProjectRed development build published with:
         // AUTO_GENERATED_VERSION=5.0-logistics-dev ./gradlew publishToMavenLocal
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
 
         // ModDev already places the compileOnly API on the development module
@@ -64,6 +65,8 @@ dependencies {
         // Public release dependency. This path will become usable for the new
         // API once ProjectRed publishes the pneumatic extension upstream.
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
     }

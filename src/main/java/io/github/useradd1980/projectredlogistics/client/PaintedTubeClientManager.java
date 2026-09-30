@@ -61,7 +61,9 @@ public final class PaintedTubeClientManager {
             return;
         }
 
-        scanChunk(level, event.getChunk());
+        if (event.getChunk() instanceof LevelChunk chunk) {
+            scanChunk(level, chunk);
+        }
     }
 
     public static void onChunkUnload(ChunkEvent.Unload event) {
