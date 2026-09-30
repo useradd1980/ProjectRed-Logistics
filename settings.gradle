@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.neoforged.net/releases' }
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'java'
+        id 'net.neoforged.moddev' version '2.0.77' apply false
+    }
+}
+
+rootProject.name = 'ProjectRed-Logistics'

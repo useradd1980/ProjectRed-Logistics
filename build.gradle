@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev'
+}
+
+group = mod_group
+version = mod_version
+
+base {
+    archivesName = 'ProjectRed-Logistics'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(java_version as int)
+    }
+}
+
+repositories {
+    mavenLocal()
+    maven { url = 'https://proxy-maven.covers1624.net/' }
+    maven { url = 'https://maven.covers1624.net/' }
+}
+
+neoForge {
+    version = neoforge_version
+
+    runs {
+        client { client() }
+        server { server() }
+    }
+
+    mods {
+        projectred_logistics {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
+    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+}
+
+processResources {
+    def props = [
+        minecraft_version: minecraft_version,
+        neoforge_version: neoforge_version,
+        mod_id: mod_id,
+        mod_name: mod_name,
+        mod_version: mod_version
+    ]
+    inputs.properties(props)
+
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand(props)
+    }
+}
