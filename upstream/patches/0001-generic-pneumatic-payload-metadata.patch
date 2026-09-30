@@ -1,30 +1,3 @@
-diff --git a/api/build.gradle b/api/build.gradle
---- a/api/build.gradle
-+++ b/api/build.gradle
-@@ -1,17 +1,23 @@
- plugins {
-     id 'net.neoforged.moddev'
- }
- 
- neoForge {
-     version = forge_version
- }
- 
- dependencies {
-+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
- }
- 
-+test {
-+    useJUnitPlatform()
-+}
-+
- jar {
-     manifest {
-         // Required since API uses Minecraft classes
-         attributes 'FMLModType': 'GAMELIBRARY'
-     }
- }
 diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayload.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayload.java
 new file mode 100644
 --- /dev/null
@@ -110,13 +83,25 @@ new file mode 100644
 +        data = Objects.requireNonNull(saved, "saved").copy();
 +    }
 +}
-diff --git a/api/src/test/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadDataTest.java b/api/src/test/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadDataTest.java
+diff --git a/expansion/build.gradle b/expansion/build.gradle
+--- a/expansion/build.gradle
++++ b/expansion/build.gradle
+@@ -23,6 +23,7 @@ dependencies {
+     accessTransformers "io.codechicken:CBMultipart:${mc_version}-${cbm_version}"
+
+     compileOnly project(":api")
++    testImplementation project(":api")
+     implementation project(":core")
+
+     compileOnly "maven.modrinth:embeddium:${embeddium_version}"
+diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java
 new file mode 100644
 --- /dev/null
-+++ b/api/src/test/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadDataTest.java
-@@ -0,0 +1,74 @@
-+package mrtjp.projectred.api.pneumatics;
++++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java
+@@ -0,0 +1,75 @@
++package mrtjp.projectred.expansion.pneumatics;
 +
++import mrtjp.projectred.api.pneumatics.PneumaticPayloadData;
 +import net.minecraft.nbt.CompoundTag;
 +import net.minecraft.resources.ResourceLocation;
 +import org.junit.jupiter.api.Test;
