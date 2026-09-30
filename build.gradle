@@ -59,6 +59,9 @@ dependencies {
         // module, so only the actual runtime modules are listed here.
         runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
         runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
+        // Development convenience: lets runClient test ProjectRed's external
+        // red-alloy wire against redstone-capable pneumatic tubes.
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:transmission"
         runtimeOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
         runtimeOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
     } else {
@@ -69,6 +72,7 @@ dependencies {
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:transmission"
     }
 }
 
