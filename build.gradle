@@ -37,10 +37,30 @@ neoForge {
     }
 }
 
+def useLocalProjectRed = providers.gradleProperty('use_local_projectred')
+        .map { it.toBoolean() }
+        .getOrElse(false)
+
 dependencies {
-    compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
-    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
-    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+    if (useLocalProjectRed) {
+        // Patched ProjectRed development build published with:
+        // AUTO_GENERATED_VERSION=5.0-logistics-dev ./gradlew publishToMavenLocal
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+
+        // The local ProjectRed publication is classifier-based and does not
+        // contribute transitive runtime dependencies, so list them explicitly.
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
+        runtimeOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
+        runtimeOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
+    } else {
+        // Public release dependency. This path will become usable for the new
+        // API once ProjectRed publishes the pneumatic extension upstream.
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+    }
 }
 
 processResources {
