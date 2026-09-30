@@ -42,13 +42,16 @@ def useLocalProjectRed = providers.gradleProperty('use_local_projectred')
         .getOrElse(false)
 
 dependencies {
-    // Needed to identify the exact multipart part being clicked.
+    // Client rendering and exact multipart hit detection use the same CCL/CBM
+    // APIs already required by ProjectRed.
+    compileOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
     compileOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
 
     if (useLocalProjectRed) {
         // Patched ProjectRed development build published with:
         // AUTO_GENERATED_VERSION=5.0-logistics-dev ./gradlew publishToMavenLocal
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
 
         // ModDev already places the compileOnly API on the development module
         // path. Adding the API again as runtimeOnly creates a duplicate Java

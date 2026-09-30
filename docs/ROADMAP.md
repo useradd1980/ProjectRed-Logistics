@@ -28,7 +28,7 @@
 - [x] Register a colour-routing policy.
 - [x] Store tube paint as namespaced metadata through the generic tube API.
 - [x] Add dye/repaint interaction plus temporary sneak-empty-hand clearing.
-- [ ] Render painted tubes.
+- [x] Add first-pass client rendering for painted tubes.
 - [ ] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
 
