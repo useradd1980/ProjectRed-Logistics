@@ -1,0 +1,285 @@
+diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+--- a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
++++ b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+@@
+ import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.api.pneumatics.PneumaticTube;
+@@
+ import net.minecraft.world.level.Level;
+@@
+ import java.util.Set;
++import javax.annotation.Nullable;
+@@
+     void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy);
++
++    /**
++     * Returns the pneumatic tube occupying the center multipart slot at pos,
++     * or null if no pneumatic tube is present.
++     */
++    @Nullable
++    PneumaticTube getPneumaticTube(Level level, BlockPos pos);
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTube.java
+@@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.world.level.Level;
++
++import javax.annotation.Nullable;
++
++/**
++ * Public view of a ProjectRed pneumatic tube.
++ *
++ * Namespaced custom data belongs to the tube part and is persisted/synchronised
++ * by ProjectRed. Mutations should be performed on the logical server.
++ */
++public interface PneumaticTube {
++
++    Level getLevel();
++
++    BlockPos getPos();
++
++    boolean hasData(ResourceLocation key);
++
++    /** Returns a defensive copy, or null when absent. */
++    @Nullable CompoundTag getData(ResourceLocation key);
++
++    /** Stores a defensive copy and invalidates routing topology as needed. */
++    void setData(ResourceLocation key, CompoundTag value);
++
++    /** Removes data and invalidates routing topology as needed. */
++    void removeData(ResourceLocation key);
++}
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeData.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeData.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeData.java
+@@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.nbt.Tag;
++import net.minecraft.resources.ResourceLocation;
++
++import javax.annotation.Nullable;
++import java.util.Objects;
++
++/**
++ * Namespaced metadata attached to a physical pneumatic tube part.
++ */
++public final class PneumaticTubeData {
++
++    private CompoundTag data = new CompoundTag();
++
++    public boolean has(ResourceLocation key) {
++        return data.contains(Objects.requireNonNull(key, "key").toString(), Tag.TAG_COMPOUND);
++    }
++
++    public @Nullable CompoundTag get(ResourceLocation key) {
++        return has(key) ? data.getCompound(key.toString()).copy() : null;
++    }
++
++    public void put(ResourceLocation key, CompoundTag value) {
++        data.put(Objects.requireNonNull(key, "key").toString(),
++                Objects.requireNonNull(value, "value").copy());
++    }
++
++    public void remove(ResourceLocation key) {
++        data.remove(Objects.requireNonNull(key, "key").toString());
++    }
++
++    public boolean isEmpty() {
++        return data.isEmpty();
++    }
++
++    public CompoundTag save() {
++        return data.copy();
++    }
++
++    public void load(CompoundTag saved) {
++        data = Objects.requireNonNull(saved, "saved").copy();
++    }
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+@@
+ import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.api.pneumatics.PneumaticTube;
++import mrtjp.projectred.expansion.part.PneumaticTubePart;
++import codechicken.multipart.block.TileMultipart;
+@@
+ import net.minecraft.core.BlockPos;
+@@
+ public class ExpansionAPI implements IExpansionAPI {
+@@
+     public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
+         PneumaticRouteRegistry.register(policy);
+     }
++
++    @Override
++    public PneumaticTube getPneumaticTube(Level level, BlockPos pos) {
++        var tile = level.getBlockEntity(pos);
++        if (!(tile instanceof TileMultipart multipart)) return null;
++        var part = multipart.getSlottedPart(6);
++        return part instanceof PneumaticTubePart tube ? tube : null;
++    }
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+@@
+ import mrtjp.projectred.api.pneumatics.PneumaticRouteNodeContext;
++import mrtjp.projectred.api.pneumatics.PneumaticTube;
++import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
+@@
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.nbt.Tag;
++import net.minecraft.resources.ResourceLocation;
+@@
+-public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart {
++public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart, PneumaticTube {
+@@
+     private static final int KEY_NODE_STATE_UPDATE = 0x15;
++    private static final int KEY_TUBE_DATA_UPDATE = 0x16;
++    private static final String TUBE_DATA_KEY = "projectred_tube_data";
+@@
+     private final PneumaticTransport transport = new PneumaticTransport(this);
++    private final PneumaticTubeData customData = new PneumaticTubeData();
+@@
+     public void save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+         super.save(tag, lookupProvider);
+         tag.putByte("last_dir", (byte) lastRoundRobinDir);
+         transport.save(tag, lookupProvider);
++        if (customData.isEmpty()) {
++            tag.remove(TUBE_DATA_KEY);
++        } else {
++            tag.put(TUBE_DATA_KEY, customData.save());
++        }
+     }
+@@
+     public void load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+         super.load(tag, lookupProvider);
+         lastRoundRobinDir = tag.getByte("last_dir");
+         transport.load(tag, lookupProvider);
++        customData.load(tag.contains(TUBE_DATA_KEY, Tag.TAG_COMPOUND)
++                ? tag.getCompound(TUBE_DATA_KEY) : new CompoundTag());
+     }
+@@
+     public void writeDesc(MCDataOutput packet) {
+         super.writeDesc(packet);
+         transport.writeDesc(packet);
+         linkCache.writeDesc(packet);
++        packet.writeCompoundNBT(customData.save());
+     }
+@@
+     public void readDesc(MCDataInput packet) {
+         super.readDesc(packet);
+         transport.readDesc(packet);
+         linkCache.readDesc(packet);
++        customData.load(packet.readCompoundNBT());
+     }
+@@
+             case KEY_NODE_STATE_UPDATE -> linkCache.readStateUpdate(packet);
++            case KEY_TUBE_DATA_UPDATE -> {
++                customData.load(packet.readCompoundNBT());
++                tile().markRender();
++            }
+             default -> super.read(packet, key);
+         }
+     }
++
++    private void sendTubeDataUpdate() {
++        sendUpdate(KEY_TUBE_DATA_UPDATE, out -> out.writeCompoundNBT(customData.save()));
++    }
++
++    private void onTubeDataChanged() {
++        if (level().isClientSide) return;
++        node.markLinksChanged();
++        sendTubeDataUpdate();
++    }
++
++    //region PneumaticTube API
++    @Override
++    public net.minecraft.world.level.Level getLevel() {
++        return level();
++    }
++
++    @Override
++    public net.minecraft.core.BlockPos getPos() {
++        return pos();
++    }
++
++    @Override
++    public boolean hasData(ResourceLocation key) {
++        return customData.has(key);
++    }
++
++    @Override
++    public CompoundTag getData(ResourceLocation key) {
++        return customData.get(key);
++    }
++
++    @Override
++    public void setData(ResourceLocation key, CompoundTag value) {
++        customData.put(key, value);
++        onTubeDataChanged();
++    }
++
++    @Override
++    public void removeData(ResourceLocation key) {
++        customData.remove(key);
++        onTubeDataChanged();
++    }
++    //endregion
+diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticTubeDataTest.java
+@@
++package mrtjp.projectred.expansion.pneumatics;
++
++import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.resources.ResourceLocation;
++import org.junit.jupiter.api.Test;
++
++import static org.junit.jupiter.api.Assertions.*;
++
++class PneumaticTubeDataTest {
++
++    private static final ResourceLocation COLOUR =
++            ResourceLocation.fromNamespaceAndPath("example_addon", "route_colour");
++
++    @Test
++    void dataRoundTripsAndCopiesMutableTags() {
++        var data = new PneumaticTubeData();
++        var value = new CompoundTag();
++        value.putInt("colour", 14);
++        data.put(COLOUR, value);
++
++        value.putInt("colour", 1);
++        assertEquals(14, data.get(COLOUR).getInt("colour"));
++
++        var loaded = new PneumaticTubeData();
++        loaded.load(data.save());
++        assertEquals(14, loaded.get(COLOUR).getInt("colour"));
++    }
++
++    @Test
++    void removalAndMissingDataArePredictable() {
++        var data = new PneumaticTubeData();
++        assertFalse(data.has(COLOUR));
++        assertNull(data.get(COLOUR));
++
++        var value = new CompoundTag();
++        data.put(COLOUR, value);
++        assertTrue(data.has(COLOUR));
++        data.remove(COLOUR);
++        assertFalse(data.has(COLOUR));
++    }
++}
