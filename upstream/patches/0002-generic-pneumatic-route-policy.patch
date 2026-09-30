@@ -1,30 +1,64 @@
 diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
 --- a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
 +++ b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
-@@
- import net.neoforged.neoforge.capabilities.BlockCapability;
+@@ -1,5 +1,6 @@
+ package mrtjp.projectred.api;
+ 
 +import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
-@@
- public interface IExpansionAPI {
-+
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.world.level.Level;
+@@ -37,6 +38,15 @@ public interface IExpansionAPI {
+      */
+     void registerFrameInteraction(FrameInteraction interaction);
+ 
 +    /**
 +     * Registers a policy that may influence pneumatic payload routing.
-+     * Policies are evaluated only for pneumatic routing and are not permitted
-+     * to mutate the topology graph.
++     * Policies are evaluated only for pneumatic routing and must not mutate
++     * the topology graph from inside routing callbacks.
++     *
++     * @param policy Policy instance to register
 +     */
 +    void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy);
++
+     /**
+      * Registers a {@link MovingBlockEntityRenderCallback} object to receive callbacks for block entities
+      * that render while moving
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java
+@@ -0,0 +1,18 @@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Direction;
++import net.minecraft.world.level.Level;
++
++/**
++ * Stable public description of one transition in the pneumatic topology.
++ * Internal ProjectRed graph objects are intentionally not exposed.
++ */
++public record PneumaticRouteContext(
++        Level level,
++        BlockPos fromPos,
++        BlockPos toPos,
++        Direction direction,
++        int baseCost
++) {
++}
 diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteDecision.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteDecision.java
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteDecision.java
-@@
+@@ -0,0 +1,25 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +/**
 + * Result returned by a pneumatic routing policy.
 + *
 + * @param allowed whether this transition may be used
-+ * @param additionalCost non-negative cost added to the ProjectRed link weight
++ * @param additionalCost non-negative cost added to ProjectRed's link weight
 + */
 +public record PneumaticRouteDecision(boolean allowed, int additionalCost) {
 +
@@ -43,34 +77,11 @@ new file mode 100644
 +        return new PneumaticRouteDecision(true, additionalCost);
 +    }
 +}
-diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java
-new file mode 100644
---- /dev/null
-+++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteContext.java
-@@
-+package mrtjp.projectred.api.pneumatics;
-+
-+import net.minecraft.core.BlockPos;
-+import net.minecraft.core.Direction;
-+import net.minecraft.world.level.Level;
-+
-+/**
-+ * Stable public description of one transition in the pneumatic topology.
-+ * Internal graph objects are intentionally not exposed.
-+ */
-+public record PneumaticRouteContext(
-+        Level level,
-+        BlockPos fromPos,
-+        BlockPos toPos,
-+        Direction direction,
-+        int baseCost
-+) {
-+}
 diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteNodeContext.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteNodeContext.java
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRouteNodeContext.java
-@@
+@@ -0,0 +1,11 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +import net.minecraft.core.BlockPos;
@@ -86,14 +97,14 @@ diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRoutePol
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticRoutePolicy.java
-@@
+@@ -0,0 +1,24 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +/**
 + * Extension point for payload-aware pneumatic routing.
 + *
-+ * Implementations should be deterministic for a given payload and world state.
-+ * They must not mutate the routing graph from inside either callback.
++ * Implementations should be deterministic for a given payload and world state
++ * and must not mutate ProjectRed's routing graph from inside callbacks.
 + */
 +public interface PneumaticRoutePolicy {
 +
@@ -101,21 +112,44 @@ new file mode 100644
 +
 +    /**
 +     * Return true when this physical tube location carries state that can alter
-+     * routing. Such locations are retained as graph nodes instead of being
++     * routing. Such a location is retained as a graph node instead of being
 +     * compressed into a longer topology link.
 +     *
-+     * This callback is deliberately payload-independent because the topology is
-+     * shared by every payload.
++     * This callback is payload-independent because the topology is shared by
++     * every payload.
 +     */
 +    default boolean requiresRoutingNode(PneumaticRouteNodeContext context) {
 +        return false;
 +    }
 +}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+@@ -1,6 +1,7 @@
+ package mrtjp.projectred.expansion;
+ 
+ import mrtjp.projectred.api.*;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
+ import mrtjp.projectred.expansion.client.MovementClientRegistry;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.world.level.Level;
+@@ -15,6 +16,11 @@ public class ExpansionAPI implements IExpansionAPI {
+ 
+     private ExpansionAPI() { }
+ 
++    @Override
++    public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
++        PneumaticRouteRegistry.register(policy);
++    }
++
+     @Override
+     public void registerBlockMover(Block block, BlockMover mover) {
+         MovementRegistry.registerBlockMover(block, mover);
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticRouteRegistry.java b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticRouteRegistry.java
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticRouteRegistry.java
-@@
+@@ -0,0 +1,55 @@
 +package mrtjp.projectred.expansion;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticPayload;
@@ -151,58 +185,87 @@ new file mode 100644
 +
 +    public static PneumaticRouteDecision evaluate(PneumaticPayload payload, PneumaticRouteContext context) {
 +        long addedCost = 0;
++
 +        for (var policy : POLICIES) {
-+            var result = Objects.requireNonNull(policy.evaluate(payload, context),
++            var result = Objects.requireNonNull(
++                    policy.evaluate(payload, context),
 +                    "Pneumatic route policy returned null");
++
 +            if (!result.allowed()) return PneumaticRouteDecision.BLOCK;
++
 +            addedCost += result.additionalCost();
 +            if (addedCost >= Integer.MAX_VALUE) {
 +                addedCost = Integer.MAX_VALUE;
 +                break;
 +            }
 +        }
++
 +        return addedCost == 0
 +                ? PneumaticRouteDecision.PASS
 +                : PneumaticRouteDecision.cost((int) addedCost);
 +    }
 +}
-diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
---- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
-+++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
-@@
- import mrtjp.projectred.api.*;
-+import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
-@@
- public class ExpansionAPI implements IExpansionAPI {
-@@
-+    @Override
-+    public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
-+        PneumaticRouteRegistry.register(policy);
-+    }
-+
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 --- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
-@@
- import mrtjp.projectred.expansion.TubeType;
-+import mrtjp.projectred.expansion.PneumaticRouteRegistry;
+@@ -6,7 +6,9 @@
+ import codechicken.multipart.api.part.TickablePart;
+ import codechicken.multipart.block.TileMultipart;
+ import mrtjp.projectred.api.IConnectable;
 +import mrtjp.projectred.api.pneumatics.PneumaticRouteNodeContext;
-@@
+ import mrtjp.projectred.core.CenterLookup;
++import mrtjp.projectred.expansion.PneumaticRouteRegistry;
+ import mrtjp.projectred.expansion.TubeType;
+ import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
+ import mrtjp.projectred.expansion.graphs.ClientSideLinkCache;
+@@ -326,6 +328,14 @@ public void onNodeChanged(boolean linksChanged, boolean stateChange) {
+ 
      @Override
      public boolean requiresActiveNode() {
-+        // Addons may mark otherwise-redundant tube locations as routing-significant.
-+        // This is payload-independent so the topology remains globally cacheable.
++        // Addons may mark an otherwise-redundant tube location as routing
++        // significant. This decision is payload-independent so the topology
++        // remains globally cacheable.
 +        if (PneumaticRouteRegistry.requiresRoutingNode(
 +                new PneumaticRouteNodeContext(level(), pos()))) {
 +            return true;
 +        }
 +
          int connectedTubes = 0;
+         for (int s = 0; s < 6; s++) {
+             if (maskConnects(s)) {
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
+@@ -1,5 +1,6 @@
+ package mrtjp.projectred.expansion.pneumatics;
+ 
++import mrtjp.projectred.expansion.PneumaticRouteRegistry;
+ import mrtjp.projectred.expansion.graphs.GraphRouteTable;
+ import mrtjp.projectred.expansion.part.PneumaticTubePayload;
+ 
+@@ -66,6 +67,17 @@ private boolean searchMode(PneumaticTransportContainer startContainer, int dirMa
+             return true;
+         }
+ 
++        // Registered policies require payload-aware route selection. Reuse the
++        // graph's cached links, but bypass the payload-agnostic route table so
++        // a longer permitted path cannot be hidden by a shorter blocked path.
++        if (PneumaticRouteRegistry.hasPolicies()) {
++            var policyResult = new PolicyAwarePneumaticPathfinder(
++                    startContainer, payload, dirMask, mode).result();
++            exitDirMask = policyResult.exitDirMask();
++            exitWeight = policyResult.weight();
++            return exitDirMask != 0;
++        }
++
+         // Check route table for routes in each direction
+         for (int s = 0; s < 6; s++) {
+             if ((dirMask & (1 << s)) == 0) continue;
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java
-@@
+@@ -0,0 +1,129 @@
 +package mrtjp.projectred.expansion.pneumatics;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticRouteContext;
@@ -216,11 +279,12 @@ new file mode 100644
 +
 +import java.util.Comparator;
 +import java.util.HashMap;
++import java.util.Map;
 +import java.util.PriorityQueue;
 +
 +/**
-+ * Payload-aware Dijkstra search over ProjectRed's already-cached topology links.
-+ * The physical tube network is not rediscovered per payload.
++ * Payload-aware Dijkstra search over ProjectRed's already-cached topology
++ * links. The physical tube network is not rediscovered per payload.
 + */
 +final class PolicyAwarePneumaticPathfinder {
 +
@@ -241,16 +305,17 @@ new file mode 100644
 +
 +    PneumaticExitPathfinder.PneumaticExits result() {
 +        if (!(startContainer instanceof GraphContainer startGraph)) {
-+            return new PneumaticExitPathfinder.PneumaticExits(0, Integer.MAX_VALUE, null);
++            return new PneumaticExitPathfinder.PneumaticExits(
++                    0, Integer.MAX_VALUE, null);
 +        }
 +
 +        var queue = new PriorityQueue<State>(Comparator.comparingInt(State::cost));
-+        var bestByNode = new HashMap<GraphNode, Integer>();
++        Map<StateKey, Integer> best = new HashMap<>();
 +
 +        for (GraphLink link : startGraph.getNode().getLinks()) {
 +            int firstDir = link.direction();
 +            if ((dirMask & (1 << firstDir)) == 0) continue;
-+            enqueue(queue, bestByNode, link, firstDir, 0);
++            enqueue(queue, best, link, firstDir, 0);
 +        }
 +
 +        int bestExitCost = Integer.MAX_VALUE;
@@ -258,39 +323,45 @@ new file mode 100644
 +
 +        while (!queue.isEmpty()) {
 +            State state = queue.poll();
-+            if (state.cost > bestByNode.getOrDefault(state.node, Integer.MAX_VALUE)) continue;
-+            if (state.cost > bestExitCost) break;
++            StateKey stateKey = new StateKey(state.node(), state.firstDir());
 +
-+            if (state.node.container instanceof PneumaticTransportContainer ptc) {
++            if (state.cost() != best.getOrDefault(stateKey, Integer.MAX_VALUE)) {
++                continue;
++            }
++            if (state.cost() > bestExitCost) break;
++
++            if (state.node().container instanceof PneumaticTransportContainer ptc) {
 +                for (int side = 0; side < 6; side++) {
 +                    if (ptc.canItemExitTube(payload, side, mode)) {
-+                        if (state.cost < bestExitCost) {
-+                            bestExitCost = state.cost;
++                        if (state.cost() < bestExitCost) {
++                            bestExitCost = state.cost();
 +                            exitMask = 0;
 +                        }
-+                        exitMask |= 1 << state.firstDir;
++                        exitMask |= 1 << state.firstDir();
 +                        break;
 +                    }
 +                }
 +            }
 +
-+            if (state.cost >= bestExitCost) continue;
++            if (state.cost() >= bestExitCost) continue;
 +
-+            for (GraphLink link : state.node.getLinks()) {
-+                enqueue(queue, bestByNode, link, state.firstDir, state.cost);
++            for (GraphLink link : state.node().getLinks()) {
++                enqueue(queue, best, link, state.firstDir(), state.cost());
 +            }
 +        }
 +
 +        return new PneumaticExitPathfinder.PneumaticExits(
-+                exitMask, bestExitCost, exitMask == 0 ? null : mode);
++                exitMask,
++                bestExitCost,
++                exitMask == 0 ? null : mode);
 +    }
 +
 +    private void enqueue(PriorityQueue<State> queue,
-+                         HashMap<GraphNode, Integer> bestByNode,
++                         Map<StateKey, Integer> best,
 +                         GraphLink link,
 +                         int firstDir,
 +                         int previousCost) {
-+        var context = makeContext(link);
++        PneumaticRouteContext context = makeContext(link);
 +        if (context == null) return;
 +
 +        var decision = PneumaticRouteRegistry.evaluate(payload, context);
@@ -298,10 +369,13 @@ new file mode 100644
 +
 +        long total = (long) previousCost + link.weight() + decision.additionalCost();
 +        int cost = total >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
-+        GraphNode node = link.to().getNode();
 +
-+        if (cost >= bestByNode.getOrDefault(node, Integer.MAX_VALUE)) return;
-+        bestByNode.put(node, cost);
++        GraphNode node = link.to().getNode();
++        StateKey key = new StateKey(node, firstDir);
++
++        if (cost >= best.getOrDefault(key, Integer.MAX_VALUE)) return;
++
++        best.put(key, cost);
 +        queue.add(new State(node, firstDir, cost));
 +    }
 +
@@ -318,39 +392,14 @@ new file mode 100644
 +    }
 +
 +    private record State(GraphNode node, int firstDir, int cost) { }
-+}
-diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
---- a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
-+++ b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticExitPathfinder.java
-@@
- import mrtjp.projectred.expansion.graphs.GraphRouteTable;
- import mrtjp.projectred.expansion.part.PneumaticTubePayload;
-+import mrtjp.projectred.expansion.PneumaticRouteRegistry;
-@@
-     private boolean searchMode(PneumaticTransportContainer startContainer, int dirMask, PneumaticTransportMode mode) {
-         // First check for immediate exists out of starting container
-@@
-         if (exitDirMask != 0) {
-             return true;
-         }
 +
-+        // Generic addon policies require payload-aware route selection. Reuse the
-+        // graph's cached links but bypass the payload-agnostic route table so a
-+        // longer permitted path is not discarded behind a shorter blocked path.
-+        if (PneumaticRouteRegistry.hasPolicies()) {
-+            var policyResult = new PolicyAwarePneumaticPathfinder(
-+                    startContainer, payload, dirMask, mode).result();
-+            exitDirMask = policyResult.exitDirMask();
-+            exitWeight = policyResult.weight();
-+            return exitDirMask != 0;
-+        }
- 
-         // Check route table for routes in each direction
++    private record StateKey(GraphNode node, int firstDir) { }
++}
 diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticRouteDecisionTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticRouteDecisionTest.java
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticRouteDecisionTest.java
-@@
+@@ -0,0 +1,23 @@
 +package mrtjp.projectred.expansion.pneumatics;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticRouteDecision;
