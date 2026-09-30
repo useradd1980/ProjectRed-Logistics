@@ -54,9 +54,9 @@ new file mode 100644
 + */
 +public interface PneumaticTube {
 +
-+    Level level();
++    Level getLevel();
 +
-+    BlockPos pos();
++    BlockPos getPos();
 +
 +    boolean hasData(ResourceLocation key);
 +
@@ -271,6 +271,16 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
      //endregion
  
 +    //region PneumaticTube API
++    @Override
++    public net.minecraft.world.level.Level getLevel() {
++        return level();
++    }
++
++    @Override
++    public net.minecraft.core.BlockPos getPos() {
++        return pos();
++    }
++
 +    @Override
 +    public boolean hasData(ResourceLocation key) {
 +        return customData.has(key);
