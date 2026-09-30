@@ -1,11 +1,13 @@
 package io.github.useradd1980.projectredlogistics;
 
+import io.github.useradd1980.projectredlogistics.interaction.TubePaintInteractionHandler;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsColourRoutePolicy;
 import mrtjp.projectred.api.ProjectRedAPI;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,6 +19,7 @@ public final class ProjectRedLogistics {
 
     public ProjectRedLogistics(ModContainer container, IEventBus modEventBus) {
         modEventBus.addListener(this::commonSetup);
+        NeoForge.EVENT_BUS.addListener(TubePaintInteractionHandler::onRightClickBlock);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

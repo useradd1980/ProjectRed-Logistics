@@ -25,9 +25,9 @@
 
 ## Milestone 2 — ProjectRed Logistics integration
 
-- [ ] Register a colour-routing policy.
-- [ ] Add paint state through the agreed generic extension.
-- [ ] Dye / repaint / clear-paint interactions.
+- [x] Register a colour-routing policy.
+- [x] Store tube paint as namespaced metadata through the generic tube API.
+- [x] Add dye/repaint interaction plus temporary sneak-empty-hand clearing.
 - [ ] Render painted tubes.
 - [ ] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
