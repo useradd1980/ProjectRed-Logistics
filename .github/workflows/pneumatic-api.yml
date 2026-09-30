@@ -29,12 +29,14 @@ jobs:
           path: projectred
           persist-credentials: false
 
-      - name: Verify and apply metadata patch
+      - name: Verify and apply generic pneumatic API patches
         working-directory: projectred
         run: |
-          PATCH="$GITHUB_WORKSPACE/upstream/patches/0001-generic-pneumatic-payload-metadata.patch"
-          git apply --check "$PATCH"
-          git apply "$PATCH"
+          for PATCH in "$GITHUB_WORKSPACE"/upstream/patches/000[1-3]-*.patch; do
+            echo "Applying $(basename "$PATCH")"
+            git apply --check "$PATCH"
+            git apply "$PATCH"
+          done
           git diff --check
 
       - name: Install Java 21
@@ -46,6 +48,6 @@ jobs:
       - name: Configure Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Test API and compile ProjectRed Expansion
+      - name: Test generic routing API and compile ProjectRed Expansion
         working-directory: projectred
         run: ./gradlew :api:compileJava :expansion:test :expansion:compileJava --no-daemon
