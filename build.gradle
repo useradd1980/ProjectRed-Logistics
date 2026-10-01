@@ -62,9 +62,11 @@ dependencies {
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
 
-        // Tests directly exercise the public pneumatic payload API, so the
-        // API jar must also be available to the test source set/runtime.
-        testImplementation "mrtjp:ProjectRed:${projectred_local_version}:api"
+        // Tests compile against the public pneumatic payload API, but the API
+        // must not be added again at test runtime: NeoForge's tested-mod
+        // launcher already supplies ProjectRed and a second API module causes
+        // a duplicate-package module resolution failure.
+        testCompileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
 
         // ModDev already places the compileOnly API on the development module
         // path. Adding the API again as runtimeOnly creates a duplicate Java
@@ -82,7 +84,7 @@ dependencies {
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
-        testImplementation "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+        testCompileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:transmission"
