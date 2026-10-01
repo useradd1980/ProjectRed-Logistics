@@ -41,7 +41,7 @@
 - [x] Assign optional routing colour to outgoing payloads.
 - [x] Add functional 3x3 Filter inventory GUI.
 - [x] Match RP2 Filter slot layout and add 17-state colour selector.
-- [ ] Validate filtering of incoming tube payloads.
+- [x] Filter incoming tube payloads by configured entries and retag accepted payloads with the Filter colour.
 - [ ] Add automated tests.
 
 ## Milestone 4 — Sorting Machine

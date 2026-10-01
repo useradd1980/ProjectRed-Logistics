@@ -8,6 +8,7 @@ import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.core.CenterLookup;
 import mrtjp.projectred.core.inventory.BaseContainer;
 import mrtjp.projectred.expansion.part.PneumaticTubePayload;
+import mrtjp.projectred.expansion.pneumatics.PneumaticTransportMode;
 import mrtjp.projectred.expansion.tile.BasePneumaticDeviceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -104,6 +105,75 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
     @Override
     protected void onDeactivated() {
     }
+
+    //region PneumaticTransportDevice behaviour
+
+    /**
+     * RP2 Filter semantics for normal tube input:
+     * - an empty filter accepts any payload
+     * - a configured filter accepts a payload when its item matches any of the
+     *   nine filter stacks
+     * - configured stack counts do not constrain already-travelling payloads
+     *
+     * Backstuff entering from the output face remains the inherited
+     * BasePneumaticDeviceBlockEntity behaviour.
+     */
+    @Override
+    public boolean canAcceptPayload(
+            int s,
+            PneumaticTubePayload payload,
+            PneumaticTransportMode mode) {
+
+        if (!super.canAcceptPayload(s, payload, mode)) {
+            return false;
+        }
+
+        if (mode != PneumaticTransportMode.PASSIVE_NORMAL
+                || s != (side ^ 1)
+                || isFilterEmpty()) {
+            return true;
+        }
+
+        return matchesAnyFilter(payload.getItemStack());
+    }
+
+    /**
+     * RP2 creates a fresh coloured tube item after a normal Filter pass. In
+     * ProjectRed Logistics we preserve the payload object but replace its
+     * routing-colour metadata with this Filter's selected colour.
+     */
+    @Override
+    public boolean insertPayload(int s, PneumaticTubePayload payload) {
+        if (canAcceptPayload(
+                s,
+                payload,
+                PneumaticTransportMode.PASSIVE_NORMAL)) {
+
+            applyOutputColour(payload);
+        }
+
+        return super.insertPayload(s, payload);
+    }
+
+    private void applyOutputColour(PneumaticTubePayload payload) {
+        if (routeColour >= 0) {
+            LogisticsRoutingData.setPayloadColour(payload, routeColour);
+        } else {
+            LogisticsRoutingData.clearPayloadColour(payload);
+        }
+    }
+
+    private boolean matchesAnyFilter(ItemStack stack) {
+        for (int slot = 0; slot < FILTER_SIZE; slot++) {
+            ItemStack template = filterInventory.getItem(slot);
+            if (!template.isEmpty() && matches(template, stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //endregion
 
     @Override
     public ItemInteractionResult useItemOn(
