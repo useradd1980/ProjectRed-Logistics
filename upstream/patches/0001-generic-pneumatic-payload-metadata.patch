@@ -87,13 +87,16 @@ new file mode 100644
 diff --git a/expansion/build.gradle b/expansion/build.gradle
 --- a/expansion/build.gradle
 +++ b/expansion/build.gradle
-@@ -23,6 +23,7 @@ dependencies {
+@@ -35,8 +35,9 @@ dependencies {
+     accessTransformers "io.codechicken:CodeChickenLib:${mc_version}-${ccl_version}"
      accessTransformers "io.codechicken:CBMultipart:${mc_version}-${cbm_version}"
-
+ 
      compileOnly project(":api")
 +    testCompileOnly project(":api")
      implementation project(":core")
-
+ 
+     compileOnly "maven.modrinth:embeddium:${embeddium_version}"
+     compileOnly "maven.modrinth:sodium:${sodium_version}"
 diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java
 new file mode 100644
 --- /dev/null
