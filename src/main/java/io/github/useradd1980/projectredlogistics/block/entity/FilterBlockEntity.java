@@ -1,7 +1,9 @@
 package io.github.useradd1980.projectredlogistics.block.entity;
 
+import codechicken.lib.inventory.container.CCLMenuType;
 import codechicken.lib.vec.Vector3;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
+import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.core.CenterLookup;
 import mrtjp.projectred.core.inventory.BaseContainer;
@@ -12,7 +14,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
@@ -143,7 +147,16 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
             return ItemInteractionResult.sidedSuccess(getLevel().isClientSide());
         }
 
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        // Normal right-click opens the Filter inventory.
+        if (!getLevel().isClientSide()) {
+            CCLMenuType.openMenu(
+                    (ServerPlayer) player,
+                    new SimpleMenuProvider(
+                            (id, inventory, p) -> new FilterMenu(inventory, this, id),
+                            getBlockState().getBlock().getName()),
+                    packet -> packet.writePos(getBlockPos()));
+        }
+        return ItemInteractionResult.sidedSuccess(getLevel().isClientSide());
     }
 
     private ItemStack extractFromRearInventory() {

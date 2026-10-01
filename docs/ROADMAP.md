@@ -39,7 +39,8 @@
 - [x] Implement empty-filter whole-stack extraction.
 - [x] Implement quantity-sensitive configured extraction.
 - [x] Assign optional routing colour to outgoing payloads.
-- [ ] Add RP2-style Filter GUI and colour selector.
+- [x] Add functional 3x3 Filter inventory GUI.
+- [ ] Replace placeholder GUI with RP2-style layout and colour selector.
 - [ ] Validate filtering of incoming tube payloads.
 - [ ] Add automated tests.
 

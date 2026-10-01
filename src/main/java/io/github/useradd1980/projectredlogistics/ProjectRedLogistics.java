@@ -29,7 +29,7 @@ public final class ProjectRedLogistics {
         NeoForge.EVENT_BUS.addListener(TubePaintInteractionHandler::onRightClickBlock);
 
         if (FMLEnvironment.dist.isClient()) {
-            ProjectRedLogisticsClient.init();
+            ProjectRedLogisticsClient.init(modEventBus);
         }
     }
 

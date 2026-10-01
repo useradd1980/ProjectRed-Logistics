@@ -3,6 +3,8 @@ package io.github.useradd1980.projectredlogistics.init;
 import io.github.useradd1980.projectredlogistics.ProjectRedLogistics;
 import io.github.useradd1980.projectredlogistics.block.FilterBlock;
 import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
+import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
+import codechicken.lib.inventory.container.CCLMenuType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -10,6 +12,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -29,6 +32,8 @@ public final class LogisticsContent {
             DeferredRegister.create(BuiltInRegistries.ITEM, ProjectRedLogistics.MOD_ID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, ProjectRedLogistics.MOD_ID);
+    public static final DeferredRegister<MenuType<?>> MENU_TYPES =
+            DeferredRegister.create(BuiltInRegistries.MENU, ProjectRedLogistics.MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ProjectRedLogistics.MOD_ID);
 
@@ -45,6 +50,9 @@ public final class LogisticsContent {
                     () -> BlockEntityType.Builder
                             .of(FilterBlockEntity::new, FILTER_BLOCK.get())
                             .build(null));
+
+    public static final Supplier<MenuType<FilterMenu>> FILTER_MENU =
+            MENU_TYPES.register(ID_FILTER, () -> CCLMenuType.create(FilterMenu.FACTORY));
 
     public static final Supplier<CreativeModeTab> LOGISTICS_TAB =
             CREATIVE_TABS.register(
@@ -63,6 +71,7 @@ public final class LogisticsContent {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BLOCK_ENTITY_TYPES.register(modEventBus);
+        MENU_TYPES.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
     }
 
