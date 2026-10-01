@@ -13,6 +13,7 @@ Apply in order:
 1. `patches/0001-generic-pneumatic-payload-metadata.patch`
 2. `patches/0002-generic-pneumatic-route-policy.patch`
 3. `patches/0003-generic-pneumatic-tube-metadata.patch`
+4. `patches/0004-generic-pneumatic-entry-policy.patch`
 
 Suggested workflow:
 
@@ -30,6 +31,9 @@ git apply /path/to/ProjectRed-Logistics/upstream/patches/0002-generic-pneumatic-
 
 git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0003-generic-pneumatic-tube-metadata.patch
 git apply /path/to/ProjectRed-Logistics/upstream/patches/0003-generic-pneumatic-tube-metadata.patch
+
+git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0004-generic-pneumatic-entry-policy.patch
+git apply /path/to/ProjectRed-Logistics/upstream/patches/0004-generic-pneumatic-entry-policy.patch
 ```
 
 ## Patch 0001 — payload metadata
@@ -65,6 +69,16 @@ path.
 The routing-significant-node callback is required because ProjectRed normally
 compresses redundant physical tube runs into larger graph links. A painted or
 otherwise restricted tube must remain visible to payload-aware routing.
+
+## Patch 0004 — first-tube policy admission
+
+Ensures registered pneumatic route policies are also evaluated when a payload
+is first inserted from a machine/device into a pneumatic tube. Without this
+boundary check, restrictions attached to the first tube can be bypassed before
+normal graph routing begins.
+
+The additional route cost is irrelevant at this fixed admission boundary; the
+policy's allow/block decision is enforced before the tube accepts the payload.
 
 ## Patch 0003 — tube metadata
 
