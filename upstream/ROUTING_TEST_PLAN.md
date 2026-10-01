@@ -53,3 +53,14 @@ Change namespaced tube metadata on the server.
 
 Expected result: the client receives updated metadata and rerenders the
 multipart without requiring a chunk reload.
+
+
+## First-tube admission
+
+- A coloured payload inserted directly from a pneumatic device into an
+  unpainted tube is accepted.
+- A coloured payload inserted directly into a matching painted tube is
+  accepted.
+- A coloured payload inserted directly into a differently painted tube is
+  rejected before entering the tube.
+- An uncoloured payload remains accepted by painted tubes.
