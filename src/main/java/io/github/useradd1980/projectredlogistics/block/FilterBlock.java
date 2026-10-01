@@ -20,9 +20,11 @@ public class FilterBlock extends BaseDeviceBlock {
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // The front/output face points back toward the player, matching the
-        // usual machine-placement convention. Rear/input is the opposite side.
-        int side = context.getHorizontalDirection().getOpposite().ordinal();
+        // Follow the player's actual look direction across all six axes.
+        // This also matches the orientation convention expected by the
+        // ProjectRed device model: horizontal placement is not inverted, and
+        // looking sufficiently up/down allows vertical placement.
+        int side = context.getNearestLookingDirection().ordinal();
         return defaultBlockState()
                 .setValue(ProjectRedBlock.SIDE, side)
                 .setValue(ProjectRedBlock.ACTIVE, false);
