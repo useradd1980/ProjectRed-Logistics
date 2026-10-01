@@ -46,14 +46,17 @@
 
 ## Milestone 4 — Sorting Machine
 
-- [ ] Block/entity/model.
-- [ ] RP2-style GUI.
-- [ ] Filter columns.
-- [ ] Colour assignment.
-- [ ] Sorting modes.
-- [ ] Default route behaviour.
-- [ ] Stack handling.
-- [ ] Automated tests.
+- [x] Block/entity and first-pass model.
+- [x] Functional RP2-positioned 5x8 GUI.
+- [x] Eight filter columns with independent route colours.
+- [x] Inline payload sorting and colour assignment.
+- [x] Implement seven pr6 sorting modes for adjacent-inventory extraction.
+- [x] Default route behaviour for modes 4 and 6.
+- [x] Configured-batch and whole-stack handling.
+- [x] Add Single Step, Automatic, and Single Sweep pull-mode state/behaviour.
+- [ ] Integrate modern ProjectRed Electrotine/low-load power requirement.
+- [ ] Replace placeholder Filter-derived block texture with Sorting Machine art.
+- [ ] Add automated tests.
 
 ## Milestone 5 — Manager
 
