@@ -2,7 +2,7 @@
   "parent": "minecraft:block/cube_bottom_top",
   "textures": {
     "bottom": "projectred_logistics:block/filter_bottom",
-    "side": "projectred_logistics:block/filter_side",
+    "side": "projectred_logistics:block/filter_side_active",
     "top": "projectred_logistics:block/filter_top"
   }
 }
