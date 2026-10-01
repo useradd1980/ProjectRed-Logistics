@@ -157,7 +157,7 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         boolean moved = runPullStepAndExport();
         if (!moved) return;
 
-        if (mode >= MODE_RANDOM_ALLSTACK) {
+        if (isFilterEmpty() || mode >= MODE_RANDOM_ALLSTACK) {
             pendingSweeps = Math.max(0, pendingSweeps - 1);
             setChanged();
         }
@@ -185,9 +185,6 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
             enqueue(stack, mode == MODE_ANY_ITEM_DEFAULT || mode == MODE_WHOLE_STACK_DEFAULT
                     ? defaultColour
                     : FilterRules.NO_COLOUR);
-            if (pullMode == PULL_SINGLE_SWEEP) {
-                pendingSweeps = Math.max(0, pendingSweeps - 1);
-            }
             return true;
         }
 
@@ -244,8 +241,14 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         if (match >= 0) {
             ItemStack template = filterInventory.getItem(match);
             ItemStack extracted = wholeStack
-                    ? collectExact(source, template, template.getMaxStackSize())
-                    : collectExact(source, template, template.getCount());
+                    ? collectUpTo(
+                            source,
+                            template,
+                            template.getMaxStackSize())
+                    : collectExact(
+                            source,
+                            template,
+                            template.getCount());
 
             if (extracted.isEmpty()) return false;
             enqueue(extracted, columnColours[match & 7]);
@@ -454,6 +457,35 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         }
 
         return remaining == 0 ? result : ItemStack.EMPTY;
+    }
+
+    private ItemStack collectUpTo(
+            SourceAccessor source,
+            ItemStack template,
+            int maximum) {
+
+        int amount = Math.min(
+                availableCount(source, template),
+                Math.min(maximum, template.getMaxStackSize()));
+        if (amount <= 0) return ItemStack.EMPTY;
+
+        ItemStack result = ItemStack.EMPTY;
+        int remaining = amount;
+
+        for (int slot = 0; slot < source.size() && remaining > 0; slot++) {
+            ItemStack stack = source.getStack(slot);
+            if (!FilterRules.matches(template, stack)) continue;
+
+            ItemStack removed = source.extract(slot, remaining);
+            if (removed.isEmpty()) continue;
+
+            if (result.isEmpty()) result = removed.copy();
+            else result.grow(removed.getCount());
+
+            remaining -= removed.getCount();
+        }
+
+        return result;
     }
 
     private ItemStack collectFirstWholeStack(SourceAccessor source) {
