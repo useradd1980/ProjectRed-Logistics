@@ -1,3 +1,5 @@
 {
-  "mod.projectred_logistics.name": "ProjectRed Logistics"
+  "mod.projectred_logistics.name": "ProjectRed Logistics",
+  "itemGroup.projectred_logistics": "ProjectRed Logistics",
+  "block.projectred_logistics.filter": "Filter"
 }

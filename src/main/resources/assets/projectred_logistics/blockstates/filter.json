@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "projectred_logistics:block/filter"
+      }
+    }
+  ]
+}

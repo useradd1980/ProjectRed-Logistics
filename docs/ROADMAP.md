@@ -32,7 +32,18 @@
 - [ ] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
 
-## Milestone 3 — Sorting Machine
+## Milestone 3 — Filter
+
+- [x] Register Filter block/entity and first-pass model.
+- [x] Add nine real, persistent filter slots.
+- [x] Implement empty-filter whole-stack extraction.
+- [x] Implement quantity-sensitive configured extraction.
+- [x] Assign optional routing colour to outgoing payloads.
+- [ ] Add RP2-style Filter GUI and colour selector.
+- [ ] Validate filtering of incoming tube payloads.
+- [ ] Add automated tests.
+
+## Milestone 4 — Sorting Machine
 
 - [ ] Block/entity/model.
 - [ ] RP2-style GUI.
@@ -43,7 +54,7 @@
 - [ ] Stack handling.
 - [ ] Automated tests.
 
-## Milestone 4 — Manager
+## Milestone 5 — Manager
 
 - [ ] Inventory template.
 - [ ] Stock-level evaluation.
