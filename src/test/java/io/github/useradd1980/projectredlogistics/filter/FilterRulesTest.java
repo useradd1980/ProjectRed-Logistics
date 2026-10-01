@@ -1,6 +1,5 @@
 package io.github.useradd1980.projectredlogistics.filter;
 
-import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.api.pneumatics.PneumaticPayload;
 import net.minecraft.nbt.CompoundTag;
@@ -48,7 +47,7 @@ class FilterRulesTest {
         LogisticsRoutingData.setPayloadColour(payload, 5);
         FilterRules.applyOutputColour(
                 payload,
-                FilterBlockEntity.NO_COLOUR);
+                FilterRules.NO_COLOUR);
 
         assertTrue(LogisticsRoutingData.getPayloadColour(payload).isEmpty());
     }

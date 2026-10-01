@@ -1,6 +1,5 @@
 package io.github.useradd1980.projectredlogistics.filter;
 
-import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import mrtjp.projectred.api.pneumatics.PneumaticPayload;
 import net.minecraft.world.item.ItemStack;
@@ -10,6 +9,8 @@ import net.minecraft.world.item.ItemStack;
  * can be unit-tested directly.
  */
 public final class FilterRules {
+
+    public static final int NO_COLOUR = -1;
 
     private FilterRules() { }
 
@@ -31,7 +32,7 @@ public final class FilterRules {
             PneumaticPayload payload,
             int routeColour) {
 
-        if (routeColour == FilterBlockEntity.NO_COLOUR) {
+        if (routeColour == NO_COLOUR) {
             LogisticsRoutingData.clearPayloadColour(payload);
             return;
         }

@@ -159,7 +159,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
     private boolean matchesAnyFilter(ItemStack stack) {
         for (int slot = 0; slot < FILTER_SIZE; slot++) {
             ItemStack template = filterInventory.getItem(slot);
-            if (FilterRules.FilterRules.matches(template, stack)) {
+            if (FilterRules.matches(template, stack)) {
                 return true;
             }
         }
