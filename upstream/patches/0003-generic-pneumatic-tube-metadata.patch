@@ -266,7 +266,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
      private void readPayloadHandoff(MCDataInput packet) {
          int id = packet.readInt();
          PneumaticTubePayload payload = transport.removePayload(id);
-@@ -187,6 +221,32 @@ private void readPayloadRemoved(MCDataInput packet) {
+@@ -187,6 +221,42 @@ private void readPayloadRemoved(MCDataInput packet) {
      }
      //endregion
  
