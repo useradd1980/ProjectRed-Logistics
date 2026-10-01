@@ -2,6 +2,7 @@ package io.github.useradd1980.projectredlogistics.block.entity;
 
 import codechicken.lib.inventory.container.CCLMenuType;
 import codechicken.lib.vec.Vector3;
+import io.github.useradd1980.projectredlogistics.filter.FilterRules;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
@@ -149,24 +150,16 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
                 payload,
                 PneumaticTransportMode.PASSIVE_NORMAL)) {
 
-            applyOutputColour(payload);
+            FilterRules.applyOutputColour(payload, routeColour);
         }
 
         return super.insertPayload(s, payload);
     }
 
-    private void applyOutputColour(PneumaticTubePayload payload) {
-        if (routeColour >= 0) {
-            LogisticsRoutingData.setPayloadColour(payload, routeColour);
-        } else {
-            LogisticsRoutingData.clearPayloadColour(payload);
-        }
-    }
-
     private boolean matchesAnyFilter(ItemStack stack) {
         for (int slot = 0; slot < FILTER_SIZE; slot++) {
             ItemStack template = filterInventory.getItem(slot);
-            if (!template.isEmpty() && matches(template, stack)) {
+            if (FilterRules.FilterRules.matches(template, stack)) {
                 return true;
             }
         }
@@ -267,7 +260,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
             for (int slot : slots) {
                 ItemStack stack = source.getItem(slot);
-                if (!matches(template, stack)) continue;
+                if (!FilterRules.matches(template, stack)) continue;
                 if (!source.canTakeItemThroughFace(
                         slot, stack, extractDirection)) continue;
 
@@ -284,7 +277,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
                 if (remaining <= 0) break;
 
                 ItemStack stack = source.getItem(slot);
-                if (!matches(template, stack)) continue;
+                if (!FilterRules.matches(template, stack)) continue;
                 if (!source.canTakeItemThroughFace(
                         slot, stack, extractDirection)) continue;
 
@@ -334,7 +327,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
             for (int slot = 0; slot < source.getSlots(); slot++) {
                 ItemStack stack = source.getStackInSlot(slot);
-                if (!matches(template, stack)) continue;
+                if (!FilterRules.matches(template, stack)) continue;
 
                 ItemStack simulated =
                         source.extractItem(slot, wanted - available, true);
@@ -350,7 +343,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
             for (int slot = 0; slot < source.getSlots() && remaining > 0; slot++) {
                 ItemStack stack = source.getStackInSlot(slot);
-                if (!matches(template, stack)) continue;
+                if (!FilterRules.matches(template, stack)) continue;
 
                 ItemStack removed =
                         source.extractItem(slot, remaining, false);
@@ -377,11 +370,6 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
             }
         }
         return true;
-    }
-
-    private static boolean matches(ItemStack template, ItemStack stack) {
-        return !stack.isEmpty()
-                && ItemStack.isSameItemSameComponents(template, stack);
     }
 
     public BaseContainer getFilterInventory() {

@@ -34,22 +34,9 @@ public final class LogisticsColourRoutePolicy implements PneumaticRoutePolicy {
         }
 
         var tubeColour = LogisticsRoutingData.getTubeColour(tube);
-
-        // Unpainted tubes are always neutral.
-        if (tubeColour.isEmpty()) {
-            return PneumaticRouteDecision.PASS;
-        }
-
         var payloadColour = LogisticsRoutingData.getPayloadColour(payload);
 
-        // Ordinary payloads from Block Breakers, Transposers, etc. are
-        // uncoloured and may travel through painted tubes.
-        if (payloadColour.isEmpty()) {
-            return PneumaticRouteDecision.PASS;
-        }
-
-        // Only explicitly coloured payloads are restricted by tube colour.
-        return payloadColour.getAsInt() == tubeColour.getAsInt()
+        return LogisticsColourRules.canTravel(payloadColour, tubeColour)
                 ? PneumaticRouteDecision.PASS
                 : PneumaticRouteDecision.BLOCK;
     }

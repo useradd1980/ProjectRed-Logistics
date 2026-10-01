@@ -29,7 +29,7 @@
 - [x] Store tube paint as namespaced metadata through the generic tube API.
 - [x] Add dye/repaint interaction plus temporary sneak-empty-hand clearing.
 - [x] Add first-pass client rendering for painted tubes.
-- [ ] Assign and preserve payload colours.
+- [x] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
 
 ## Milestone 3 — Filter
@@ -42,7 +42,7 @@
 - [x] Add functional 3x3 Filter inventory GUI.
 - [x] Match RP2 Filter slot layout and add 17-state colour selector.
 - [x] Filter incoming tube payloads by configured entries and retag accepted payloads with the Filter colour.
-- [ ] Add automated tests.
+- [x] Add automated tests for Filter matching, payload recolouring, and colour compatibility.
 
 ## Milestone 4 — Sorting Machine
 

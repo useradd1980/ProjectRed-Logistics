@@ -35,6 +35,11 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods.getByName('projectred_logistics')
+    }
 }
 
 def useLocalProjectRed = providers.gradleProperty('use_local_projectred')
@@ -46,6 +51,9 @@ dependencies {
     // APIs already required by ProjectRed.
     compileOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
     compileOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 
     if (useLocalProjectRed) {
         // Patched ProjectRed development build published with:
@@ -89,4 +97,10 @@ processResources {
     filesMatching('META-INF/neoforge.mods.toml') {
         expand(props)
     }
+}
+
+
+test {
+    useJUnitPlatform()
+    jvmArgs('-Xmx2G', '-Xms512M')
 }
