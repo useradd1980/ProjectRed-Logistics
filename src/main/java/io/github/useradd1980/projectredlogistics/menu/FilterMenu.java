@@ -3,6 +3,7 @@ package io.github.useradd1980.projectredlogistics.menu;
 import codechicken.lib.inventory.container.CCLMenuType;
 import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
+import mrtjp.projectred.core.inventory.container.SimpleDataSlot;
 import mrtjp.projectred.lib.InventoryLib;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -26,7 +27,11 @@ public class FilterMenu extends AbstractContainerMenu {
                 return new FilterMenu(playerInventory, filter, windowId);
             };
 
+    public static final int BUTTON_COLOUR_NEXT = 0;
+    public static final int BUTTON_COLOUR_PREVIOUS = 1;
+
     private final FilterBlockEntity filter;
+    private int routeColour = FilterBlockEntity.NO_COLOUR;
 
     public FilterMenu(
             Inventory playerInventory,
@@ -52,11 +57,29 @@ public class FilterMenu extends AbstractContainerMenu {
                 8,
                 84,
                 this::addSlot);
+
+        routeColour = filter.getRouteColour();
+        addDataSlot(new SimpleDataSlot(
+                filter::getRouteColour,
+                value -> routeColour = value));
     }
 
     @Override
     public boolean stillValid(Player player) {
         return Container.stillValidBlockEntity(filter, player);
+    }
+
+    @Override
+    public boolean clickMenuButton(Player player, int buttonId) {
+        if (buttonId != BUTTON_COLOUR_NEXT
+                && buttonId != BUTTON_COLOUR_PREVIOUS) {
+            return false;
+        }
+
+        boolean forward = buttonId == BUTTON_COLOUR_NEXT;
+        filter.cycleRouteColour(forward);
+        routeColour = filter.getRouteColour();
+        return true;
     }
 
     @Override
@@ -102,5 +125,9 @@ public class FilterMenu extends AbstractContainerMenu {
 
     public FilterBlockEntity getFilter() {
         return filter;
+    }
+
+    public int getRouteColour() {
+        return routeColour;
     }
 }

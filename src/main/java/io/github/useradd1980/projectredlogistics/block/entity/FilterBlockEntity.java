@@ -13,14 +13,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -106,11 +105,6 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
     protected void onDeactivated() {
     }
 
-    /**
-     * Temporary pre-GUI controls:
-     * - dye: set output route colour
-     * - sneak + empty hand: clear output route colour
-     */
     @Override
     public ItemInteractionResult useItemOn(
             ItemStack held,
@@ -118,45 +112,35 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
             InteractionHand hand,
             BlockHitResult hit) {
 
+        // Preserve ProjectRed screwdriver rotation.
         ItemInteractionResult parent = super.useItemOn(held, player, hand, hit);
         if (parent.consumesAction()) {
             return parent;
         }
 
-        if (held.getItem() instanceof DyeItem dye) {
-            if (!getLevel().isClientSide()) {
-                routeColour = dye.getDyeColor().getId();
-                setChanged();
-                player.displayClientMessage(
-                        Component.literal(
-                                "Filter output colour: "
-                                        + dye.getDyeColor().getName()),
-                        false);
-            }
-            return ItemInteractionResult.sidedSuccess(getLevel().isClientSide());
-        }
-
-        if (held.isEmpty() && player.isShiftKeyDown() && routeColour != NO_COLOUR) {
-            if (!getLevel().isClientSide()) {
-                routeColour = NO_COLOUR;
-                setChanged();
-                player.displayClientMessage(
-                        Component.literal("Filter output colour cleared"),
-                        false);
-            }
-            return ItemInteractionResult.sidedSuccess(getLevel().isClientSide());
-        }
-
-        // Normal right-click opens the Filter inventory.
-        if (!getLevel().isClientSide()) {
-            CCLMenuType.openMenu(
-                    (ServerPlayer) player,
-                    new SimpleMenuProvider(
-                            (id, inventory, p) -> new FilterMenu(inventory, this, id),
-                            getBlockState().getBlock().getName()),
-                    packet -> packet.writePos(getBlockPos()));
-        }
+        openMenu(player);
         return ItemInteractionResult.sidedSuccess(getLevel().isClientSide());
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(
+            Player player,
+            BlockHitResult hit) {
+
+        openMenu(player);
+        return InteractionResult.sidedSuccess(getLevel().isClientSide());
+    }
+
+    private void openMenu(Player player) {
+        if (getLevel().isClientSide()) return;
+
+        CCLMenuType.openMenu(
+                (ServerPlayer) player,
+                new SimpleMenuProvider(
+                        (id, inventory, p) ->
+                                new FilterMenu(inventory, this, id),
+                        getBlockState().getBlock().getName()),
+                packet -> packet.writePos(getBlockPos()));
     }
 
     private ItemStack extractFromRearInventory() {
@@ -340,6 +324,13 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     public int getRouteColour() {
         return routeColour;
+    }
+
+    public void cycleRouteColour(boolean forward) {
+        int next = routeColour + (forward ? 1 : -1);
+        if (next > 15) next = NO_COLOUR;
+        if (next < NO_COLOUR) next = 15;
+        setRouteColour(next);
     }
 
     public void setRouteColour(int routeColour) {

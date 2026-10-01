@@ -40,7 +40,7 @@
 - [x] Implement quantity-sensitive configured extraction.
 - [x] Assign optional routing colour to outgoing payloads.
 - [x] Add functional 3x3 Filter inventory GUI.
-- [ ] Replace placeholder GUI with RP2-style layout and colour selector.
+- [x] Match RP2 Filter slot layout and add 17-state colour selector.
 - [ ] Validate filtering of incoming tube payloads.
 - [ ] Add automated tests.
 
