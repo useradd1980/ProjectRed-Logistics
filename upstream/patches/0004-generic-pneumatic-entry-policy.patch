@@ -1,14 +1,14 @@
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 --- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
-@@ -7,6 +7,7 @@
+@@ -7,5 +7,6 @@
  import codechicken.multipart.block.TileMultipart;
  import mrtjp.projectred.api.IConnectable;
 +import mrtjp.projectred.api.pneumatics.PneumaticRouteContext;
  import mrtjp.projectred.api.pneumatics.PneumaticRouteNodeContext;
  import mrtjp.projectred.api.pneumatics.PneumaticTube;
  import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
-@@ -454,6 +455,20 @@ public boolean canItemEnterTube(PneumaticTubePayload payload, int side) {
+@@ -454,6 +455,23 @@ public boolean canItemEnterTube(PneumaticTubePayload payload, int side) {
          if (!maskConnects(side)) {
              return false;
          }
