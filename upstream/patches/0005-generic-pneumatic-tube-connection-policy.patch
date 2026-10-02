@@ -28,7 +28,7 @@ diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeConn
 new file mode 100644
 --- /dev/null
 +++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeConnectionPolicy.java
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,25 @@
 +package mrtjp.projectred.api.pneumatics;
 +
 +import net.minecraft.core.Direction;
@@ -81,7 +81,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubeCon
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubeConnectionRegistry.java
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,32 @@
 +package mrtjp.projectred.expansion;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticTube;
@@ -125,7 +125,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
  import mrtjp.projectred.expansion.TubeType;
  import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
  import mrtjp.projectred.expansion.graphs.ClientSideLinkCache;
-@@ -191,9 +192,17 @@ private void onTubeDataChanged() {
+@@ -191,6 +192,16 @@ private void onTubeDataChanged() {
          if (level().isClientSide) return;
  
          tile().setChanged();
@@ -142,7 +142,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
          node.markLinksChanged();
          sendTubeDataUpdate();
      }
-@@ -278,6 +287,14 @@ public boolean canConnectPart(IConnectable part, int s) {
+@@ -278,3 +287,11 @@ public boolean canConnectPart(IConnectable part, int s) {
 +        if (part instanceof PneumaticTube otherTube
 +                && !PneumaticTubeConnectionRegistry.canConnect(
 +                        this,
