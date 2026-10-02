@@ -5,6 +5,7 @@ import codechicken.lib.vec.Vector3;
 import io.github.useradd1980.projectredlogistics.filter.FilterRules;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
+import io.github.useradd1980.projectredlogistics.sorting.SortingMachineRules;
 import mrtjp.projectred.core.CenterLookup;
 import mrtjp.projectred.core.inventory.BaseContainer;
 import mrtjp.projectred.expansion.part.PneumaticTubePayload;
@@ -44,13 +45,20 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
     public static final int COLUMNS = 8;
     public static final int FILTER_SIZE = ROWS * COLUMNS;
 
-    public static final int MODE_ANYSTACK_SEQUENTIAL = 0;
-    public static final int MODE_ALLSTACK_SEQUENTIAL = 1;
-    public static final int MODE_RANDOM_ALLSTACK = 2;
-    public static final int MODE_ANY_ITEM = 3;
-    public static final int MODE_ANY_ITEM_DEFAULT = 4;
-    public static final int MODE_ANY_ITEM_WHOLE_STACK = 5;
-    public static final int MODE_WHOLE_STACK_DEFAULT = 6;
+    public static final int MODE_ANYSTACK_SEQUENTIAL =
+            SortingMachineRules.MODE_ANYSTACK_SEQUENTIAL;
+    public static final int MODE_ALLSTACK_SEQUENTIAL =
+            SortingMachineRules.MODE_ALLSTACK_SEQUENTIAL;
+    public static final int MODE_RANDOM_ALLSTACK =
+            SortingMachineRules.MODE_RANDOM_ALLSTACK;
+    public static final int MODE_ANY_ITEM =
+            SortingMachineRules.MODE_ANY_ITEM;
+    public static final int MODE_ANY_ITEM_DEFAULT =
+            SortingMachineRules.MODE_ANY_ITEM_DEFAULT;
+    public static final int MODE_ANY_ITEM_WHOLE_STACK =
+            SortingMachineRules.MODE_ANY_ITEM_WHOLE_STACK;
+    public static final int MODE_WHOLE_STACK_DEFAULT =
+            SortingMachineRules.MODE_WHOLE_STACK_DEFAULT;
 
     public static final int PULL_SINGLE_STEP = 0;
     public static final int PULL_AUTOMATIC = 1;
@@ -182,9 +190,11 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         if (isFilterEmpty()) {
             ItemStack stack = collectFirstWholeStack(source);
             if (stack.isEmpty()) return false;
-            enqueue(stack, mode == MODE_ANY_ITEM_DEFAULT || mode == MODE_WHOLE_STACK_DEFAULT
-                    ? defaultColour
-                    : FilterRules.NO_COLOUR);
+            enqueue(
+                    stack,
+                    SortingMachineRules.usesDefaultRoute(mode)
+                            ? defaultColour
+                            : FilterRules.NO_COLOUR);
             return true;
         }
 
@@ -192,10 +202,10 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
             case MODE_ANYSTACK_SEQUENTIAL -> runAnyStackSequential(source);
             case MODE_ALLSTACK_SEQUENTIAL -> runAllStackSequential(source);
             case MODE_RANDOM_ALLSTACK -> runRandomAllStack(source);
-            case MODE_ANY_ITEM -> runAnyItem(source, false, false);
-            case MODE_ANY_ITEM_DEFAULT -> runAnyItem(source, false, true);
-            case MODE_ANY_ITEM_WHOLE_STACK -> runAnyItem(source, true, false);
-            case MODE_WHOLE_STACK_DEFAULT -> runAnyItem(source, true, true);
+            case MODE_ANY_ITEM,
+                    MODE_ANY_ITEM_DEFAULT,
+                    MODE_ANY_ITEM_WHOLE_STACK,
+                    MODE_WHOLE_STACK_DEFAULT -> runAnyItem(source, mode);
             default -> false;
         };
     }
@@ -234,28 +244,33 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     private boolean runAnyItem(
             SourceAccessor source,
-            boolean wholeStack,
-            boolean defaultRoute) {
+            int sortMode) {
 
         int match = findAnyMatch(source, -1);
         if (match >= 0) {
             ItemStack template = filterInventory.getItem(match);
-            ItemStack extracted = wholeStack
-                    ? collectUpTo(
-                            source,
-                            template,
-                            template.getMaxStackSize())
-                    : collectExact(
-                            source,
-                            template,
-                            template.getCount());
+            int available = availableCount(source, template);
+            int requested = SortingMachineRules.requestedAmount(
+                    sortMode,
+                    template.getCount(),
+                    available,
+                    template.getMaxStackSize());
+
+            if (requested <= 0) return false;
+
+            ItemStack extracted = collectExact(
+                    source,
+                    template,
+                    requested);
 
             if (extracted.isEmpty()) return false;
             enqueue(extracted, columnColours[match & 7]);
             return true;
         }
 
-        if (!defaultRoute) return false;
+        if (!SortingMachineRules.usesDefaultRoute(sortMode)) {
+            return false;
+        }
 
         ItemStack unmatched = collectFirstWholeStack(source);
         if (unmatched.isEmpty()) return false;
@@ -303,8 +318,7 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         }
 
         return findMatchingTemplate(payload.getItemStack()) >= 0
-                || mode == MODE_ANY_ITEM_DEFAULT
-                || mode == MODE_WHOLE_STACK_DEFAULT;
+                || SortingMachineRules.acceptsUnmatched(mode, false);
     }
 
     @Override
@@ -457,35 +471,6 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         }
 
         return remaining == 0 ? result : ItemStack.EMPTY;
-    }
-
-    private ItemStack collectUpTo(
-            SourceAccessor source,
-            ItemStack template,
-            int maximum) {
-
-        int amount = Math.min(
-                availableCount(source, template),
-                Math.min(maximum, template.getMaxStackSize()));
-        if (amount <= 0) return ItemStack.EMPTY;
-
-        ItemStack result = ItemStack.EMPTY;
-        int remaining = amount;
-
-        for (int slot = 0; slot < source.size() && remaining > 0; slot++) {
-            ItemStack stack = source.getStack(slot);
-            if (!FilterRules.matches(template, stack)) continue;
-
-            ItemStack removed = source.extract(slot, remaining);
-            if (removed.isEmpty()) continue;
-
-            if (result.isEmpty()) result = removed.copy();
-            else result.grow(removed.getCount());
-
-            remaining -= removed.getCount();
-        }
-
-        return result;
     }
 
     private ItemStack collectFirstWholeStack(SourceAccessor source) {

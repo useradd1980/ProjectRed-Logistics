@@ -56,7 +56,7 @@
 - [x] Add Single Step, Automatic, and Single Sweep pull-mode state/behaviour.
 - [ ] Integrate modern ProjectRed Electrotine/low-load power requirement.
 - [ ] Replace placeholder Filter-derived block texture with Sorting Machine art.
-- [ ] Add automated tests.
+- [x] Add automated tests for pr6 mode families, default-route acceptance, and whole-stack extraction quantities.
 
 ## Milestone 5 — Manager
 
