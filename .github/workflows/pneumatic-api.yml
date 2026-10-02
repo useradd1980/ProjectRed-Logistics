@@ -1,15 +1,13 @@
 name: Generic pneumatic API prototype
 
 on:
-  push:
-    branches:
-      - feat/pneumatic-payload-metadata
   pull_request:
     branches:
       - main
     paths:
       - 'upstream/**'
       - '.github/workflows/pneumatic-api.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,11 +30,21 @@ jobs:
       - name: Verify and apply generic pneumatic API patches
         working-directory: projectred
         run: |
-          for PATCH in "$GITHUB_WORKSPACE"/upstream/patches/000[1-3]-*.patch; do
-            echo "Applying $(basename "$PATCH")"
+          PATCHES=(
+            "0001-generic-pneumatic-payload-metadata.patch"
+            "0002-generic-pneumatic-route-policy.patch"
+            "0003-generic-pneumatic-tube-metadata.patch"
+            "0004-generic-pneumatic-entry-policy.patch"
+            "0005-generic-pneumatic-tube-connection-policy.patch"
+          )
+
+          for NAME in "${PATCHES[@]}"; do
+            PATCH="$GITHUB_WORKSPACE/upstream/patches/$NAME"
+            echo "Applying $NAME"
             git apply --check "$PATCH"
             git apply "$PATCH"
           done
+
           git diff --check
 
       - name: Install Java 21
