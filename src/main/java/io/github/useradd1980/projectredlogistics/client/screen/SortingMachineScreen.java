@@ -113,9 +113,15 @@ public class SortingMachineScreen
             int x,
             int y) {
 
-        graphics.fill(x, y, x + 18, y + 18, 0xFF373737);
-        graphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFFFFFFFF);
-        graphics.fill(x + 2, y + 2, x + 17, y + 17, 0xFF8B8B8B);
+        // Match the vanilla inventory slot bevel exactly:
+        // 16x16 medium-grey interior, dark top/left, white bottom/right.
+        graphics.fill(x, y, x + 18, y + 18, 0xFF8B8B8B);
+
+        graphics.fill(x, y, x + 17, y + 1, 0xFF373737);
+        graphics.fill(x, y, x + 1, y + 17, 0xFF373737);
+
+        graphics.fill(x + 17, y + 1, x + 18, y + 17, 0xFFFFFFFF);
+        graphics.fill(x + 1, y + 17, x + 18, y + 18, 0xFFFFFFFF);
     }
 
     private void drawColumnColours(
