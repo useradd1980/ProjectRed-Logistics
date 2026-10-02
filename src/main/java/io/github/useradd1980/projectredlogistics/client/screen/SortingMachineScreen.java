@@ -21,8 +21,6 @@ public class SortingMachineScreen
                     "textures/gui/sorting_machine_icons.png");
 
     private static final int ICON_SIZE = 14;
-    private static final int ICON_ATLAS_WIDTH = 112;
-    private static final int ICON_ATLAS_HEIGHT = 28;
     private static final int MODE_ICON_V = 0;
     private static final int PULL_ICON_V = 14;
 
@@ -192,6 +190,8 @@ public class SortingMachineScreen
             int u,
             int v) {
 
+        // Keep this GUI sheet at the vanilla 256x256 size so the standard
+        // GuiGraphics blit path samples the 14x14 RP2 icon region exactly.
         graphics.blit(
                 ICONS,
                 x,
@@ -199,9 +199,7 @@ public class SortingMachineScreen
                 u,
                 v,
                 ICON_SIZE,
-                ICON_SIZE,
-                ICON_ATLAS_WIDTH,
-                ICON_ATLAS_HEIGHT);
+                ICON_SIZE);
     }
 
     private void drawColourButton(
