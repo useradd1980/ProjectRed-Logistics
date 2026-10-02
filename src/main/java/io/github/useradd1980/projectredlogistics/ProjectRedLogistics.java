@@ -4,6 +4,7 @@ import io.github.useradd1980.projectredlogistics.client.ProjectRedLogisticsClien
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import io.github.useradd1980.projectredlogistics.interaction.TubePaintInteractionHandler;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsColourRoutePolicy;
+import io.github.useradd1980.projectredlogistics.routing.LogisticsTubeConnectionPolicy;
 import mrtjp.projectred.api.ProjectRedAPI;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -47,8 +48,11 @@ public final class ProjectRedLogistics {
 
             ProjectRedAPI.expansionAPI.registerPneumaticRoutePolicy(
                     LogisticsColourRoutePolicy.INSTANCE);
+            ProjectRedAPI.expansionAPI.registerPneumaticTubeConnectionPolicy(
+                    LogisticsTubeConnectionPolicy.INSTANCE);
 
-            LOGGER.info("Registered ProjectRed Logistics colour routing policy");
+            LOGGER.info(
+                    "Registered ProjectRed Logistics colour routing and tube connection policies");
         });
     }
 }

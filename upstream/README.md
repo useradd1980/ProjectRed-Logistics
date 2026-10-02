@@ -14,6 +14,7 @@ Apply in order:
 2. `patches/0002-generic-pneumatic-route-policy.patch`
 3. `patches/0003-generic-pneumatic-tube-metadata.patch`
 4. `patches/0004-generic-pneumatic-entry-policy.patch`
+5. `patches/0005-generic-pneumatic-tube-connection-policy.patch`
 
 Suggested workflow:
 
@@ -108,3 +109,13 @@ See `ROUTING_TEST_PLAN.md` for the next validation cases.
 
 Status: prototype. Full dependency-resolved ProjectRed compilation and in-game
 validation are still required. No upstream PR has been opened.
+
+
+## Patch 0005 — physical tube connection policy
+
+Adds a generic, payload-independent hook that lets addons veto physical
+tube-to-tube connections while ProjectRed rebuilds connection masks.
+
+This is intentionally separate from payload route policies: a connection policy
+changes the actual topology and therefore also affects tube geometry. Tube
+metadata changes force local and neighbouring tube masks to be recalculated.

@@ -31,6 +31,7 @@
 - [x] Add first-pass client rendering for painted tubes.
 - [x] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
+- [x] Disconnect differently painted adjacent tubes at the physical topology level.
 
 ## Milestone 3 — Filter
 

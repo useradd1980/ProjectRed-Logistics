@@ -35,4 +35,28 @@ class LogisticsColourRulesTest {
                 OptionalInt.of(5),
                 OptionalInt.of(11)));
     }
+    @Test
+    void unpaintedTubeConnectsToPaintedTube() {
+        assertTrue(LogisticsColourRules.coloursCompatible(
+                OptionalInt.empty(),
+                OptionalInt.of(11)));
+        assertTrue(LogisticsColourRules.coloursCompatible(
+                OptionalInt.of(11),
+                OptionalInt.empty()));
+    }
+
+    @Test
+    void matchingPaintedTubesConnect() {
+        assertTrue(LogisticsColourRules.coloursCompatible(
+                OptionalInt.of(5),
+                OptionalInt.of(5)));
+    }
+
+    @Test
+    void differentlyPaintedTubesDisconnect() {
+        assertFalse(LogisticsColourRules.coloursCompatible(
+                OptionalInt.of(5),
+                OptionalInt.of(11)));
+    }
+
 }

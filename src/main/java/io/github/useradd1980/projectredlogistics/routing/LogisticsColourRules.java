@@ -17,8 +17,19 @@ public final class LogisticsColourRules {
             OptionalInt payloadColour,
             OptionalInt tubeColour) {
 
-        return tubeColour.isEmpty()
-                || payloadColour.isEmpty()
-                || payloadColour.getAsInt() == tubeColour.getAsInt();
+        return coloursCompatible(payloadColour, tubeColour);
+    }
+
+    /**
+     * RP2 tube connection rule: unpainted is neutral; two painted tubes only
+     * connect when their colours match.
+     */
+    public static boolean coloursCompatible(
+            OptionalInt firstColour,
+            OptionalInt secondColour) {
+
+        return firstColour.isEmpty()
+                || secondColour.isEmpty()
+                || firstColour.getAsInt() == secondColour.getAsInt();
     }
 }
