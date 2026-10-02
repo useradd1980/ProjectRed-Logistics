@@ -6,6 +6,7 @@ import mrtjp.projectred.lib.Point;
 import mrtjp.projectred.redui.RedUIContainerScreen;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 public class SortingMachineScreen
@@ -13,6 +14,17 @@ public class SortingMachineScreen
 
     private static final int WIDTH = 176;
     private static final int HEIGHT = 222;
+
+    private static final ResourceLocation ICONS =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/sorting_machine_icons.png");
+
+    private static final int ICON_SIZE = 14;
+    private static final int ICON_ATLAS_WIDTH = 112;
+    private static final int ICON_ATLAS_HEIGHT = 28;
+    private static final int MODE_ICON_V = 0;
+    private static final int PULL_ICON_V = 14;
 
     private static final int[] PAINT_COLOURS = {
             0xFFFFFF, 0xFF8000, 0xFF00FF, 0x6C80FF,
@@ -130,16 +142,23 @@ public class SortingMachineScreen
             int x,
             int y) {
 
-        drawButton(
+        // RP2 pr6 sourced these directly from sortmachine.png:
+        // pull/automode icons at u=210, v=14*mode
+        // sorting-mode icons at u=196, v=14*mode
+        // They are repacked into our small helper atlas without alteration.
+        drawIconButton(
                 graphics,
                 x + 7,
                 y + 73,
-                Integer.toString(menu.getPullMode() + 1));
-        drawButton(
+                menu.getPullMode() * ICON_SIZE,
+                PULL_ICON_V);
+
+        drawIconButton(
                 graphics,
                 x + 7,
                 y + 91,
-                Integer.toString(menu.getMode() + 1));
+                menu.getMode() * ICON_SIZE,
+                MODE_ICON_V);
 
         int mode = menu.getMode();
         if (mode == SortingMachineBlockEntity.MODE_ANY_ITEM_DEFAULT
@@ -150,21 +169,6 @@ public class SortingMachineScreen
                     y + 109,
                     menu.getDefaultColour());
         }
-
-        graphics.drawString(
-                font,
-                PULL_NAMES[menu.getPullMode()],
-                x + 26,
-                y + 75,
-                0xFF303030,
-                false);
-        graphics.drawString(
-                font,
-                MODE_NAMES[menu.getMode()],
-                x + 26,
-                y + 93,
-                0xFF303030,
-                false);
     }
 
     private void drawSequentialColumn(
@@ -181,15 +185,23 @@ public class SortingMachineScreen
         graphics.fill(columnX + 20, y + 16, columnX + 22, y + 109, 0xFF36D85A);
     }
 
-    private void drawButton(
+    private void drawIconButton(
             GuiGraphics graphics,
             int x,
             int y,
-            String text) {
+            int u,
+            int v) {
 
-        graphics.fill(x, y, x + 14, y + 14, 0xFF373737);
-        graphics.fill(x + 1, y + 1, x + 13, y + 13, 0xFFC6C6C6);
-        graphics.drawString(font, text, x + 4, y + 3, 0xFF202020, false);
+        graphics.blit(
+                ICONS,
+                x,
+                y,
+                u,
+                v,
+                ICON_SIZE,
+                ICON_SIZE,
+                ICON_ATLAS_WIDTH,
+                ICON_ATLAS_HEIGHT);
     }
 
     private void drawColourButton(
@@ -214,6 +226,56 @@ public class SortingMachineScreen
             graphics.fill(x + 6, y + 6, x + 8, y + 8, 0xFFE0E0E0);
             graphics.fill(x + 6, y + 4, x + 8, y + 6, 0xFF303030);
             graphics.fill(x + 4, y + 6, x + 6, y + 8, 0xFF303030);
+        }
+    }
+
+    @Override
+    public void render(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick) {
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+        renderControlTooltips(graphics, mouseX, mouseY);
+    }
+
+    private void renderControlTooltips(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY) {
+
+        int rx = mouseX - getFrame().x();
+        int ry = mouseY - getFrame().y();
+
+        if (inside(rx, ry, 7, 73, ICON_SIZE, ICON_SIZE)) {
+            graphics.renderTooltip(
+                    font,
+                    Component.literal(PULL_NAMES[menu.getPullMode()]),
+                    mouseX,
+                    mouseY);
+            return;
+        }
+
+        if (inside(rx, ry, 7, 91, ICON_SIZE, ICON_SIZE)) {
+            graphics.renderTooltip(
+                    font,
+                    Component.literal(MODE_NAMES[menu.getMode()]),
+                    mouseX,
+                    mouseY);
+            return;
+        }
+
+        int mode = menu.getMode();
+        if ((mode == SortingMachineBlockEntity.MODE_ANY_ITEM_DEFAULT
+                || mode == SortingMachineBlockEntity.MODE_WHOLE_STACK_DEFAULT)
+                && inside(rx, ry, 7, 109, 14, 14)) {
+
+            graphics.renderTooltip(
+                    font,
+                    Component.literal("Default route colour"),
+                    mouseX,
+                    mouseY);
         }
     }
 
