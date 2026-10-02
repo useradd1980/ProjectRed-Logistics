@@ -134,7 +134,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
 +        // Connection policy may depend on metadata. Neighbouring multipart
 +        // tubes must also rebuild their masks when this tube's metadata changes.
 +        for (int s = 0; s < 6; s++) {
-+            BlockPos neighbour = posOfStraight(s);
++            var neighbour = posOfStraight(s);
 +            level().neighborChanged(
 +                    neighbour, tile().getBlockState().getBlock(), pos());
 +        }
