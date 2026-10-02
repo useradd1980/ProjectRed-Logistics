@@ -35,6 +35,9 @@ git apply /path/to/ProjectRed-Logistics/upstream/patches/0003-generic-pneumatic-
 
 git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0004-generic-pneumatic-entry-policy.patch
 git apply /path/to/ProjectRed-Logistics/upstream/patches/0004-generic-pneumatic-entry-policy.patch
+
+git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0005-generic-pneumatic-tube-connection-policy.patch
+git apply /path/to/ProjectRed-Logistics/upstream/patches/0005-generic-pneumatic-tube-connection-policy.patch
 ```
 
 ## Patch 0001 — payload metadata
