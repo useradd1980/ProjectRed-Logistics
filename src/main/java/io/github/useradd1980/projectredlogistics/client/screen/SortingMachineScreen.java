@@ -21,8 +21,10 @@ public class SortingMachineScreen
                     "projectred_logistics",
                     "textures/gui/sorting_machine_icons.png");
 
-    // Reuse ProjectRed Expansion's actual Auto Crafter power-meter artwork.
-    private static final ResourceLocation POWER_METERS =
+    // Use ProjectRed Expansion's actual Auto Crafter GUI sheet. This gives
+    // the Sorting Machine the same window bevel, slot panel styling and
+    // power-meter artwork instead of recreating those pixels procedurally.
+    private static final ResourceLocation BACKGROUND =
             ResourceLocation.fromNamespaceAndPath(
                     "projectred_expansion",
                     "textures/gui/auto_crafter.png");
@@ -64,10 +66,8 @@ public class SortingMachineScreen
             Component title) {
 
         super(WIDTH, HEIGHT, menu, playerInventory, title);
-        titleLabelX = 50;
-        titleLabelY = 6;
         inventoryLabelX = 8;
-        inventoryLabelY = 128;
+        inventoryLabelY = 130;
     }
 
     @Override
@@ -79,8 +79,16 @@ public class SortingMachineScreen
         int x = getFrame().x();
         int y = getFrame().y();
 
-        drawRaisedGuiFrame(graphics, x, y, WIDTH, HEIGHT);
-        drawInsetPanel(graphics, x + 4, y + 14, 168, 112);
+        drawAutoCrafterWindow(graphics, x, y);
+
+        // Remove the Auto Crafter-specific plan/storage artwork from the
+        // upper work area while leaving its exact outer window bevel intact.
+        graphics.fill(
+                x + 5,
+                y + 14,
+                x + WIDTH - 5,
+                y + 129,
+                0xFFC6C6C6);
 
         drawSequentialColumnEmbossed(graphics, x, y);
         drawSlots(graphics, x, y);
@@ -111,21 +119,6 @@ public class SortingMachineScreen
             }
         }
 
-        for (int row = 0; row < 3; row++) {
-            for (int column = 0; column < 9; column++) {
-                drawSlotFrame(
-                        graphics,
-                        x + 7 + column * 18,
-                        y + 139 + row * 18);
-            }
-        }
-
-        for (int column = 0; column < 9; column++) {
-            drawSlotFrame(
-                    graphics,
-                    x + 7 + column * 18,
-                    y + 197);
-        }
     }
 
     private static void drawSlotFrame(
@@ -159,16 +152,14 @@ public class SortingMachineScreen
             int y) {
 
         /*
-         * The Auto Crafter normally gets the unlit icons and empty meter
-         * bodies from its full GUI background before drawing the live
-         * overlays. Because the Sorting Machine draws its own background, copy
-         * those exact static regions first, then apply the same overlays used
-         * by AutoCrafterScreen.
+         * Copy the Auto Crafter's exact static meter pixels into the Sorting
+         * Machine's tighter left column, then run the same live overlay code
+         * used by AutoCrafterScreen.
          */
 
         // Static Auto Crafter charge icon and empty charge tank.
         graphics.blit(
-                POWER_METERS,
+                BACKGROUND,
                 x + 7,
                 y + 16,
                 16,
@@ -176,7 +167,7 @@ public class SortingMachineScreen
                 7,
                 9);
         graphics.blit(
-                POWER_METERS,
+                BACKGROUND,
                 x + 7,
                 y + 26,
                 16,
@@ -186,7 +177,7 @@ public class SortingMachineScreen
 
         // Static Auto Crafter flow icon and empty flow tank.
         graphics.blit(
-                POWER_METERS,
+                BACKGROUND,
                 x + 18,
                 y + 16,
                 27,
@@ -194,7 +185,7 @@ public class SortingMachineScreen
                 7,
                 9);
         graphics.blit(
-                POWER_METERS,
+                BACKGROUND,
                 x + 18,
                 y + 26,
                 27,
@@ -204,7 +195,7 @@ public class SortingMachineScreen
 
         if (menu.canConductorWork()) {
             graphics.blit(
-                    POWER_METERS,
+                    BACKGROUND,
                     x + 7,
                     y + 16,
                     177,
@@ -215,7 +206,7 @@ public class SortingMachineScreen
 
         GuiLib.drawVerticalTank(
                 graphics,
-                POWER_METERS,
+                BACKGROUND,
                 x + 7,
                 y + 26,
                 177,
@@ -226,7 +217,7 @@ public class SortingMachineScreen
 
         if (menu.isFlowFull()) {
             graphics.blit(
-                    POWER_METERS,
+                    BACKGROUND,
                     x + 18,
                     y + 16,
                     185,
@@ -237,7 +228,7 @@ public class SortingMachineScreen
 
         GuiLib.drawVerticalTank(
                 graphics,
-                POWER_METERS,
+                BACKGROUND,
                 x + 18,
                 y + 26,
                 185,
@@ -247,115 +238,51 @@ public class SortingMachineScreen
                 menu.getFlowScaled(48));
     }
 
-    private static void drawRaisedGuiFrame(
+    private static void drawAutoCrafterWindow(
             GuiGraphics graphics,
             int x,
-            int y,
-            int width,
-            int height) {
+            int y) {
 
-        // ProjectRed-style raised machine GUI: light top/left edges and
-        // progressively darker bottom/right edges.
-        graphics.fill(
+        /*
+         * AutoCrafterScreen draws its window with one background blit:
+         *
+         * graphics.blit(BACKGROUND, x, y, 0, 0,
+         *         getFrame().width(), getFrame().height());
+         *
+         * Its frame is 176x212 while the Sorting Machine needs 176x222.
+         * Keep every Auto Crafter pixel unchanged and insert ten copies of a
+         * neutral horizontal row immediately above the inventory section.
+         * The lower 92 pixels are then shifted down ten pixels. This preserves
+         * the exact ProjectRed bevel and inventory artwork without stretching.
+         */
+        graphics.blit(
+                BACKGROUND,
                 x,
                 y,
-                x + width,
-                y + height,
-                0xFFC6C6C6);
+                0,
+                0,
+                WIDTH,
+                120);
 
-        graphics.fill(
+        for (int i = 0; i < 10; i++) {
+            graphics.blit(
+                    BACKGROUND,
+                    x,
+                    y + 120 + i,
+                    0,
+                    119,
+                    WIDTH,
+                    1);
+        }
+
+        graphics.blit(
+                BACKGROUND,
                 x,
-                y,
-                x + width - 1,
-                y + 1,
-                0xFF373737);
-        graphics.fill(
-                x,
-                y,
-                x + 1,
-                y + height - 1,
-                0xFF373737);
-
-        graphics.fill(
-                x + 2,
-                y + 2,
-                x + width - 2,
-                y + 3,
-                0xFFFFFFFF);
-        graphics.fill(
-                x + 2,
-                y + 2,
-                x + 3,
-                y + height - 2,
-                0xFFFFFFFF);
-
-        graphics.fill(
-                x + 2,
-                y + height - 3,
-                x + width - 2,
-                y + height - 2,
-                0xFF6F6F6F);
-        graphics.fill(
-                x + width - 3,
-                y + 2,
-                x + width - 2,
-                y + height - 2,
-                0xFF6F6F6F);
-
-        graphics.fill(
-                x + 1,
-                y + height - 2,
-                x + width,
-                y + height,
-                0xFF373737);
-        graphics.fill(
-                x + width - 2,
-                y + 1,
-                x + width,
-                y + height,
-                0xFF373737);
-    }
-
-    private static void drawInsetPanel(
-            GuiGraphics graphics,
-            int x,
-            int y,
-            int width,
-            int height) {
-
-        // Recessed work area matching the bevel language of ProjectRed GUIs.
-        graphics.fill(
-                x,
-                y,
-                x + width,
-                y + height,
-                0xFF9A9A9A);
-
-        graphics.fill(
-                x,
-                y,
-                x + width - 1,
-                y + 2,
-                0xFF555555);
-        graphics.fill(
-                x,
-                y,
-                x + 2,
-                y + height - 1,
-                0xFF555555);
-
-        graphics.fill(
-                x + 2,
-                y + height - 2,
-                x + width,
-                y + height,
-                0xFFFFFFFF);
-        graphics.fill(
-                x + width - 2,
-                y + 2,
-                x + width,
-                y + height,
-                0xFFFFFFFF);
+                y + 130,
+                0,
+                120,
+                WIDTH,
+                92);
     }
 
     private void drawColumnColours(
