@@ -29,9 +29,11 @@ public class FilterMenu extends AbstractContainerMenu {
 
     public static final int BUTTON_COLOUR_NEXT = 0;
     public static final int BUTTON_COLOUR_PREVIOUS = 1;
+    public static final int BUTTON_AUTOMATIC_TOGGLE = 2;
 
     private final FilterBlockEntity filter;
     private int routeColour = FilterBlockEntity.NO_COLOUR;
+    private boolean automatic;
 
     public FilterMenu(
             Inventory playerInventory,
@@ -62,6 +64,9 @@ public class FilterMenu extends AbstractContainerMenu {
         addDataSlot(new SimpleDataSlot(
                 filter::getRouteColour,
                 value -> routeColour = value));
+        addDataSlot(new SimpleDataSlot(
+                () -> filter.isAutomatic() ? 1 : 0,
+                value -> automatic = value != 0));
     }
 
     @Override
@@ -71,14 +76,23 @@ public class FilterMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int buttonId) {
-        if (buttonId != BUTTON_COLOUR_NEXT
-                && buttonId != BUTTON_COLOUR_PREVIOUS) {
-            return false;
+        switch (buttonId) {
+            case BUTTON_COLOUR_NEXT -> {
+                filter.cycleRouteColour(true);
+                routeColour = filter.getRouteColour();
+            }
+            case BUTTON_COLOUR_PREVIOUS -> {
+                filter.cycleRouteColour(false);
+                routeColour = filter.getRouteColour();
+            }
+            case BUTTON_AUTOMATIC_TOGGLE -> {
+                filter.toggleAutomatic();
+                automatic = filter.isAutomatic();
+            }
+            default -> {
+                return false;
+            }
         }
-
-        boolean forward = buttonId == BUTTON_COLOUR_NEXT;
-        filter.cycleRouteColour(forward);
-        routeColour = filter.getRouteColour();
         return true;
     }
 
@@ -129,5 +143,9 @@ public class FilterMenu extends AbstractContainerMenu {
 
     public int getRouteColour() {
         return routeColour;
+    }
+
+    public boolean isAutomatic() {
+        return automatic;
     }
 }

@@ -43,6 +43,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     private static final String TAG_FILTER = "filter";
     private static final String TAG_ROUTE_COLOUR = "route_colour";
+    private static final String TAG_AUTOMATIC = "automatic";
 
     public static final int FILTER_SIZE = 9;
     public static final int NO_COLOUR = -1;
@@ -51,6 +52,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
     private final IItemHandler filterItemHandler = new InvWrapper(filterInventory);
 
     private int routeColour = NO_COLOUR;
+    private boolean automatic = false;
 
     public FilterBlockEntity(BlockPos pos, BlockState state) {
         super(LogisticsContent.FILTER_BLOCK_ENTITY.get(), pos, state);
@@ -63,6 +65,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
         super.saveToNBT(tag, lookupProvider);
         filterInventory.saveTo(tag, TAG_FILTER, lookupProvider);
         tag.putInt(TAG_ROUTE_COLOUR, routeColour);
+        tag.putBoolean(TAG_AUTOMATIC, automatic);
     }
 
     @Override
@@ -72,6 +75,7 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
         routeColour = tag.contains(TAG_ROUTE_COLOUR)
                 ? tag.getInt(TAG_ROUTE_COLOUR)
                 : NO_COLOUR;
+        automatic = tag.getBoolean(TAG_AUTOMATIC);
     }
     //endregion
 
@@ -86,8 +90,27 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     @Override
     protected void onActivated() {
+        runFilterStep();
+    }
+
+    @Override
+    protected void onDeactivated() {
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (getLevel().isClientSide()) return;
+        if (!automatic) return;
+        if (getLevel().getGameTime() % 10 != 0) return;
+        if (!itemQueue.isEmpty()) return;
+
+        runFilterStep();
+    }
+
+    private boolean runFilterStep() {
         ItemStack extracted = extractFromRearInventory();
-        if (extracted.isEmpty()) return;
+        if (extracted.isEmpty()) return false;
 
         PneumaticTubePayload payload = new PneumaticTubePayload(extracted);
         if (routeColour >= 0) {
@@ -96,15 +119,18 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
         itemQueue.add(payload);
 
+        // Automatic mode emulates a periodic redstone pulse, including the
+        // normal active-state flash while the extracted batch is exported.
+        active = true;
+        pushBlockState();
+
         // Unlike the current ProjectRed Transposer, attempt to hand the batch
         // to the tube immediately. Backstuff handling remains inherited from
         // BasePneumaticDeviceBlockEntity.
         exportQueue();
         scheduleTick(4);
-    }
-
-    @Override
-    protected void onDeactivated() {
+        setChanged();
+        return true;
     }
 
     //region PneumaticTransportDevice behaviour
@@ -382,6 +408,19 @@ public class FilterBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     public int getRouteColour() {
         return routeColour;
+    }
+
+    public boolean isAutomatic() {
+        return automatic;
+    }
+
+    public void toggleAutomatic() {
+        setAutomatic(!automatic);
+    }
+
+    public void setAutomatic(boolean automatic) {
+        this.automatic = automatic;
+        setChanged();
     }
 
     public void cycleRouteColour(boolean forward) {

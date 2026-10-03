@@ -27,9 +27,20 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
                     "minecraft",
                     "textures/gui/container/dispenser.png");
 
+    private static final ResourceLocation ICONS =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/sorting_machine_icons.png");
+
     private static final int COLOUR_X = 118;
     private static final int COLOUR_Y = 55;
     private static final int COLOUR_SIZE = 12;
+
+    private static final int AUTOMATIC_X = 139;
+    private static final int AUTOMATIC_Y = 54;
+    private static final int AUTOMATIC_SIZE = 14;
+    private static final int AUTOMATIC_ICON_U = 14;
+    private static final int AUTOMATIC_ICON_V = 14;
 
     // RP2's original display palette, in modern DyeColor ID order:
     // white, orange, magenta, light blue, yellow, lime, pink, gray,
@@ -75,6 +86,7 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
 
         drawFlowArrows(graphics, x, y);
         drawColourSelector(graphics, x, y);
+        drawAutomaticButton(graphics, x, y);
     }
 
     private void drawFlowArrows(GuiGraphics graphics, int x, int y) {
@@ -119,6 +131,61 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
         }
     }
 
+    private void drawAutomaticButton(
+            GuiGraphics graphics,
+            int x,
+            int y) {
+
+        int bx = x + AUTOMATIC_X;
+        int by = y + AUTOMATIC_Y;
+
+        // Use the same Automatic pull-mode icon as the Sorting Machine.
+        graphics.blit(
+                ICONS,
+                bx,
+                by,
+                AUTOMATIC_ICON_U,
+                AUTOMATIC_ICON_V,
+                AUTOMATIC_SIZE,
+                AUTOMATIC_SIZE);
+
+        // A thin recessed outline indicates that automatic pulsing is enabled.
+        if (menu.isAutomatic()) {
+            graphics.fill(bx - 1, by - 1, bx + AUTOMATIC_SIZE + 1, by, 0xFF373737);
+            graphics.fill(bx - 1, by - 1, bx, by + AUTOMATIC_SIZE + 1, 0xFF373737);
+            graphics.fill(bx, by + AUTOMATIC_SIZE, bx + AUTOMATIC_SIZE + 1, by + AUTOMATIC_SIZE + 1, 0xFFFFFFFF);
+            graphics.fill(bx + AUTOMATIC_SIZE, by, bx + AUTOMATIC_SIZE + 1, by + AUTOMATIC_SIZE + 1, 0xFFFFFFFF);
+        }
+    }
+
+    @Override
+    public void render(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick) {
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        int relativeX = mouseX - getFrame().x();
+        int relativeY = mouseY - getFrame().y();
+
+        if (relativeX >= AUTOMATIC_X
+                && relativeX < AUTOMATIC_X + AUTOMATIC_SIZE
+                && relativeY >= AUTOMATIC_Y
+                && relativeY < AUTOMATIC_Y + AUTOMATIC_SIZE) {
+
+            graphics.renderTooltip(
+                    font,
+                    Component.literal(
+                            menu.isAutomatic()
+                                    ? "Automatic: On"
+                                    : "Automatic: Off"),
+                    mouseX,
+                    mouseY);
+        }
+    }
+
     @Override
     public boolean mouseClicked(
             double mouseX,
@@ -137,18 +204,34 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
                     ? FilterMenu.BUTTON_COLOUR_NEXT
                     : FilterMenu.BUTTON_COLOUR_PREVIOUS;
 
-            if (minecraft != null
-                    && minecraft.player != null
-                    && minecraft.gameMode != null
-                    && menu.clickMenuButton(minecraft.player, buttonId)) {
+            return sendButton(buttonId);
+        }
 
-                minecraft.gameMode.handleInventoryButtonClick(
-                        menu.containerId,
-                        buttonId);
-            }
-            return true;
+        if (relativeX >= AUTOMATIC_X
+                && relativeX < AUTOMATIC_X + AUTOMATIC_SIZE
+                && relativeY >= AUTOMATIC_Y
+                && relativeY < AUTOMATIC_Y + AUTOMATIC_SIZE) {
+
+            return sendButton(FilterMenu.BUTTON_AUTOMATIC_TOGGLE);
         }
 
         return super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    private boolean sendButton(int buttonId) {
+        if (minecraft == null
+                || minecraft.player == null
+                || minecraft.gameMode == null) {
+            return false;
+        }
+
+        if (!menu.clickMenuButton(minecraft.player, buttonId)) {
+            return false;
+        }
+
+        minecraft.gameMode.handleInventoryButtonClick(
+                menu.containerId,
+                buttonId);
+        return true;
     }
 }
