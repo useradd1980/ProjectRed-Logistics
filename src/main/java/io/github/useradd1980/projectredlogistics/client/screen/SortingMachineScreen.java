@@ -81,12 +81,11 @@ public class SortingMachineScreen
 
         drawAutoCrafterWindow(graphics, x, y);
 
-        // Remove the Auto Crafter-specific plan/storage artwork from the
-        // upper work area while preserving its recessed power-meter well on
-        // the left. The meter border/recess is part of the Auto Crafter
-        // background, so leave that strip untouched.
+        // Remove the Auto Crafter-specific upper controls. The Sorting
+        // Machine redraws the two Auto Crafter meter wells at shifted
+        // positions below so they fit beside the 5x8 filter grid.
         graphics.fill(
-                x + 35,
+                x + 5,
                 y + 14,
                 x + WIDTH - 5,
                 y + 129,
@@ -154,47 +153,37 @@ public class SortingMachineScreen
             int y) {
 
         /*
-         * Copy the Auto Crafter's exact static meter pixels into the Sorting
-         * Machine's tighter left column, then run the same live overlay code
-         * used by AutoCrafterScreen.
+         * Copy the complete recessed meter wells from the Auto Crafter
+         * background, but shift both of them nine pixels left so they fit
+         * beside the Sorting Machine's filter grid.
+         *
+         * Auto Crafter source:
+         *   first well  x=14..24, live bar at x=16
+         *   second well x=25..35, live bar at x=27
+         *
+         * Sorting Machine destination:
+         *   first well  x=5..15,  live bar at x=7
+         *   second well x=16..26, live bar at x=18
          */
+        graphics.blit(
+                BACKGROUND,
+                x + 5,
+                y + 14,
+                14,
+                14,
+                11,
+                62);
 
-        // Static Auto Crafter charge icon and empty charge tank.
         graphics.blit(
                 BACKGROUND,
-                x + 7,
-                y + 16,
-                16,
-                16,
-                7,
-                9);
-        graphics.blit(
-                BACKGROUND,
-                x + 7,
-                y + 26,
-                16,
-                26,
-                7,
-                48);
+                x + 16,
+                y + 14,
+                25,
+                14,
+                11,
+                62);
 
-        // Static Auto Crafter flow icon and empty flow tank.
-        graphics.blit(
-                BACKGROUND,
-                x + 18,
-                y + 16,
-                27,
-                16,
-                7,
-                9);
-        graphics.blit(
-                BACKGROUND,
-                x + 18,
-                y + 26,
-                27,
-                26,
-                7,
-                48);
-
+        // Auto Crafter live charge indicator.
         if (menu.canConductorWork()) {
             graphics.blit(
                     BACKGROUND,
@@ -217,6 +206,7 @@ public class SortingMachineScreen
                 48,
                 menu.getChargeScaled(48));
 
+        // Auto Crafter live flow indicator.
         if (menu.isFlowFull()) {
             graphics.blit(
                     BACKGROUND,
