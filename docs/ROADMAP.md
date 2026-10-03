@@ -55,7 +55,7 @@
 - [x] Default route behaviour for modes 4 and 6.
 - [x] Configured-batch and whole-stack handling.
 - [x] Add Single Step, Automatic, and Single Sweep pull-mode state/behaviour.
-- [ ] Integrate modern ProjectRed Electrotine/low-load power requirement.
+- [x] Integrate ProjectRed low-load power with RP2's >60 V threshold and 25 power units per processed item.
 - [ ] Replace placeholder Filter-derived block texture with Sorting Machine art.
 - [x] Add automated tests for pr6 mode families, default-route acceptance, and whole-stack extraction quantities.
 

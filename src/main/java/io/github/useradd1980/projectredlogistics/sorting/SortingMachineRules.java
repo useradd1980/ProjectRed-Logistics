@@ -17,7 +17,19 @@ public final class SortingMachineRules {
     public static final int MODE_ANY_ITEM_WHOLE_STACK = 5;
     public static final int MODE_WHOLE_STACK_DEFAULT = 6;
 
+    // RP2 TileSorter requires at least 60 V and draws 25 power units per item.
+    public static final int MIN_OPERATING_CHARGE = 600;
+    public static final int POWER_PER_ITEM = 25;
+
     private SortingMachineRules() { }
+
+    public static boolean hasOperatingPower(int conductorCharge) {
+        return conductorCharge > MIN_OPERATING_CHARGE;
+    }
+
+    public static int powerCostForItems(int itemCount) {
+        return POWER_PER_ITEM * Math.max(0, itemCount);
+    }
 
     public static boolean usesDefaultRoute(int mode) {
         return mode == MODE_ANY_ITEM_DEFAULT

@@ -74,6 +74,7 @@ public class SortingMachineScreen
 
         drawSequentialColumnEmbossed(graphics, x, y);
         drawSlots(graphics, x, y);
+        drawPowerIndicators(graphics, x, y);
         drawColumnColours(graphics, x, y);
         drawModeControls(graphics, x, y);
     }
@@ -140,6 +141,49 @@ public class SortingMachineScreen
 
         graphics.fill(x + 17, y + 1, x + 18, y + 17, 0xFFFFFFFF);
         graphics.fill(x + 1, y + 17, x + 18, y + 18, 0xFFFFFFFF);
+    }
+
+    private void drawPowerIndicators(
+            GuiGraphics graphics,
+            int x,
+            int y) {
+
+        drawPowerGauge(
+                graphics,
+                x + 7,
+                y + 18,
+                menu.getChargeScaled(46),
+                0xFF3D9EA7);
+
+        drawPowerGauge(
+                graphics,
+                x + 16,
+                y + 18,
+                menu.getFlowScaled(46),
+                0xFFC17A2B);
+    }
+
+    private static void drawPowerGauge(
+            GuiGraphics graphics,
+            int x,
+            int y,
+            int fill,
+            int fillColour) {
+
+        // Narrow recessed meter in the same visual language as the RP2 GUI.
+        graphics.fill(x, y, x + 7, y + 50, 0xFF373737);
+        graphics.fill(x + 1, y + 1, x + 6, y + 49, 0xFFC8C8C8);
+        graphics.fill(x + 2, y + 2, x + 5, y + 48, 0xFF555555);
+
+        int clamped = Math.max(0, Math.min(46, fill));
+        if (clamped > 0) {
+            graphics.fill(
+                    x + 2,
+                    y + 48 - clamped,
+                    x + 5,
+                    y + 48,
+                    fillColour);
+        }
     }
 
     private void drawColumnColours(
@@ -335,6 +379,26 @@ public class SortingMachineScreen
 
         int rx = mouseX - getFrame().x();
         int ry = mouseY - getFrame().y();
+
+        if (inside(rx, ry, 7, 18, 7, 50)) {
+            graphics.renderTooltip(
+                    font,
+                    Component.literal(String.format(
+                            "Voltage: %.1f V",
+                            menu.getConductorCharge() / 10.0)),
+                    mouseX,
+                    mouseY);
+            return;
+        }
+
+        if (inside(rx, ry, 16, 18, 7, 50)) {
+            graphics.renderTooltip(
+                    font,
+                    Component.literal("Power flow"),
+                    mouseX,
+                    mouseY);
+            return;
+        }
 
         if (inside(rx, ry, 7, 73, ICON_SIZE, ICON_SIZE)) {
             graphics.renderTooltip(

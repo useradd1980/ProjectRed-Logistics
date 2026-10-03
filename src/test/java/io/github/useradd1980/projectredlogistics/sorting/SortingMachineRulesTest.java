@@ -94,4 +94,19 @@ class SortingMachineRulesTest {
         assertTrue(SortingMachineRules.requiresWholeColumn(2));
         assertFalse(SortingMachineRules.requiresWholeColumn(3));
     }
+    @Test
+    void rp2PowerThresholdIsStrictlyAboveSixtyVolts() {
+        assertFalse(SortingMachineRules.hasOperatingPower(599));
+        assertFalse(SortingMachineRules.hasOperatingPower(600));
+        assertTrue(SortingMachineRules.hasOperatingPower(601));
+    }
+
+    @Test
+    void rp2PowerCostIsTwentyFivePerItem() {
+        assertEquals(25, SortingMachineRules.powerCostForItems(1));
+        assertEquals(100, SortingMachineRules.powerCostForItems(4));
+        assertEquals(1600, SortingMachineRules.powerCostForItems(64));
+        assertEquals(0, SortingMachineRules.powerCostForItems(0));
+    }
+
 }

@@ -62,3 +62,18 @@ not redistributed RedPower source.
   - In sequential modes (0/1), one pulse is consumed when the column cycle
     wraps, producing a sweep through configured columns.
   - In modes 2..6, one successful extraction consumes one pulse.
+
+
+## Power behaviour
+
+Recovered from the original pr6 `TileSorter.class`:
+
+- The sorter implements the old BluePower/Blutricity connection interface.
+- Normal incoming tube payloads are rejected below 60 V.
+- Adjacent-inventory extraction also refuses to run below 60 V.
+- Successful sorting consumes `25 * itemCount` power units for each stack
+  processed.
+- Backstuff entering from the output side is accepted without the 60 V check.
+- ProjectRed Logistics maps this to ProjectRed's modern low-load Electrotine
+  network. Its conductor charge scale uses 600 == 60 V, so the original
+  threshold maps directly.

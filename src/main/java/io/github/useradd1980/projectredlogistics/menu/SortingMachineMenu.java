@@ -3,6 +3,7 @@ package io.github.useradd1980.projectredlogistics.menu;
 import codechicken.lib.inventory.container.CCLMenuType;
 import io.github.useradd1980.projectredlogistics.block.entity.SortingMachineBlockEntity;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
+import io.github.useradd1980.projectredlogistics.sorting.SortingMachineRules;
 import mrtjp.projectred.core.inventory.container.SimpleDataSlot;
 import mrtjp.projectred.lib.InventoryLib;
 import net.minecraft.world.Container;
@@ -48,6 +49,8 @@ public class SortingMachineMenu extends AbstractContainerMenu {
     private int pullMode;
     private int defaultColour;
     private int currentColumn;
+    private int condCharge;
+    private int condFlow;
 
     public SortingMachineMenu(
             Inventory playerInventory,
@@ -92,6 +95,18 @@ public class SortingMachineMenu extends AbstractContainerMenu {
         addDataSlot(new SimpleDataSlot(
                 sorter::getCurrentColumn,
                 value -> currentColumn = value));
+
+        addDataSlot(new SimpleDataSlot(
+                sorter::getConductorCharge,
+                value -> condCharge = value));
+        addDataSlot(new SimpleDataSlot(
+                () -> sorter.getConductorFlow() & 0xFFFF,
+                value -> condFlow =
+                        condFlow & 0xFFFF0000 | value & 0xFFFF));
+        addDataSlot(new SimpleDataSlot(
+                () -> sorter.getConductorFlow() >> 16 & 0xFFFF,
+                value -> condFlow =
+                        condFlow & 0xFFFF | value << 16));
     }
 
     @Override
@@ -179,5 +194,21 @@ public class SortingMachineMenu extends AbstractContainerMenu {
 
     public int getCurrentColumn() {
         return currentColumn;
+    }
+
+    public int getConductorCharge() {
+        return condCharge;
+    }
+
+    public int getChargeScaled(int scale) {
+        return Math.min(scale, scale * condCharge / 1000);
+    }
+
+    public int getFlowScaled(int scale) {
+        return scale * Integer.bitCount(condFlow) / 32;
+    }
+
+    public boolean canConductorWork() {
+        return SortingMachineRules.hasOperatingPower(condCharge);
     }
 }

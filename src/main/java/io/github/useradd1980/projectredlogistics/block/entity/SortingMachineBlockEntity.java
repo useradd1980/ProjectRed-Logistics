@@ -5,12 +5,12 @@ import codechicken.lib.vec.Vector3;
 import io.github.useradd1980.projectredlogistics.filter.FilterRules;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
+import io.github.useradd1980.projectredlogistics.power.PoweredPneumaticDeviceBlockEntity;
 import io.github.useradd1980.projectredlogistics.sorting.SortingMachineRules;
 import mrtjp.projectred.core.CenterLookup;
 import mrtjp.projectred.core.inventory.BaseContainer;
 import mrtjp.projectred.expansion.part.PneumaticTubePayload;
 import mrtjp.projectred.expansion.pneumatics.PneumaticTransportMode;
-import mrtjp.projectred.expansion.tile.BasePneumaticDeviceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -39,7 +39,8 @@ import java.util.Objects;
  * Configuration inventory layout is 5 rows x 8 columns (40 real stacks).
  * Each column has its own routing colour.
  */
-public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
+public class SortingMachineBlockEntity
+        extends PoweredPneumaticDeviceBlockEntity {
 
     public static final int ROWS = 5;
     public static final int COLUMNS = 8;
@@ -172,6 +173,8 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
     }
 
     private boolean runPullStepAndExport() {
+        if (!canConductorWork()) return false;
+
         SourceAccessor source = getRearSource();
         if (source == null) return false;
 
@@ -297,6 +300,12 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
         PneumaticTubePayload payload = new PneumaticTubePayload(stack);
         FilterRules.applyOutputColour(payload, colour);
         itemQueue.add(payload);
+        drawSortingPower(stack);
+    }
+
+    private void drawSortingPower(ItemStack stack) {
+        conductor.applyPower(
+                -SortingMachineRules.powerCostForItems(stack.getCount()));
     }
 
     //region Inline pneumatic sorting
@@ -308,6 +317,13 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
             PneumaticTransportMode transportMode) {
 
         if (!super.canAcceptPayload(s, payload, transportMode)) {
+            return false;
+        }
+
+        // RP2 only requires power for normal sorting input. Backstuff from the
+        // output side must remain acceptable even when the machine is unpowered.
+        if (transportMode == PneumaticTransportMode.PASSIVE_NORMAL
+                && !canConductorWork()) {
             return false;
         }
 
@@ -323,7 +339,12 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
 
     @Override
     public boolean insertPayload(int s, PneumaticTubePayload payload) {
-        if (canAcceptPayload(s, payload, PneumaticTransportMode.PASSIVE_NORMAL)) {
+        boolean normalInput = canAcceptPayload(
+                s,
+                payload,
+                PneumaticTransportMode.PASSIVE_NORMAL);
+
+        if (normalInput) {
             int match = findMatchingTemplate(payload.getItemStack());
 
             if (match >= 0) {
@@ -339,7 +360,11 @@ public class SortingMachineBlockEntity extends BasePneumaticDeviceBlockEntity {
             }
         }
 
-        return super.insertPayload(s, payload);
+        boolean inserted = super.insertPayload(s, payload);
+        if (inserted && normalInput) {
+            drawSortingPower(payload.getItemStack());
+        }
+        return inserted;
     }
 
     //endregion
