@@ -72,22 +72,31 @@ public class SortingMachineScreen
         graphics.fill(x + 4, y + 14, x + 172, y + 126, 0xFF6F6F6F);
         graphics.fill(x + 5, y + 15, x + 171, y + 125, 0xFF9A9A9A);
 
+        drawSequentialColumnEmbossed(graphics, x, y);
         drawSlots(graphics, x, y);
         drawColumnColours(graphics, x, y);
         drawModeControls(graphics, x, y);
-        drawSequentialColumn(graphics, x, y);
     }
 
     private void drawSlots(GuiGraphics graphics, int x, int y) {
+        boolean sequential =
+                menu.getMode() <= SortingMachineBlockEntity.MODE_ALLSTACK_SEQUENTIAL;
+        int activeColumn = menu.getCurrentColumn();
+
         for (int row = 0; row < SortingMachineBlockEntity.ROWS; row++) {
             for (int column = 0;
                     column < SortingMachineBlockEntity.COLUMNS;
                     column++) {
 
+                int interior = sequential && column == activeColumn
+                        ? 0xFF777777
+                        : 0xFF8B8B8B;
+
                 drawSlotFrame(
                         graphics,
                         x + 25 + column * 18,
-                        y + 17 + row * 18);
+                        y + 17 + row * 18,
+                        interior);
             }
         }
 
@@ -113,9 +122,18 @@ public class SortingMachineScreen
             int x,
             int y) {
 
+        drawSlotFrame(graphics, x, y, 0xFF8B8B8B);
+    }
+
+    private static void drawSlotFrame(
+            GuiGraphics graphics,
+            int x,
+            int y,
+            int interiorColour) {
+
         // Match the vanilla inventory slot bevel exactly:
-        // 16x16 medium-grey interior, dark top/left, white bottom/right.
-        graphics.fill(x, y, x + 18, y + 18, 0xFF8B8B8B);
+        // 16x16 interior, dark top/left, white bottom/right.
+        graphics.fill(x, y, x + 18, y + 18, interiorColour);
 
         graphics.fill(x, y, x + 17, y + 1, 0xFF373737);
         graphics.fill(x, y, x + 1, y + 17, 0xFF373737);
@@ -175,7 +193,7 @@ public class SortingMachineScreen
         }
     }
 
-    private void drawSequentialColumn(
+    private void drawSequentialColumnEmbossed(
             GuiGraphics graphics,
             int x,
             int y) {
@@ -184,9 +202,59 @@ public class SortingMachineScreen
             return;
         }
 
-        int columnX = x + 24 + menu.getCurrentColumn() * 18;
-        graphics.fill(columnX, y + 16, columnX + 2, y + 109, 0xFF36D85A);
-        graphics.fill(columnX + 20, y + 16, columnX + 22, y + 109, 0xFF36D85A);
+        int slotX = x + 25 + menu.getCurrentColumn() * 18;
+        int left = slotX - 3;
+        int top = y + 15;
+        int right = slotX + 21;
+        int bottom = y + 109;
+
+        // Heavy outer frame, matching the chunky recessed selection channel
+        // used by the original RP2 Sorting Machine GUI.
+        graphics.fill(left, top, right, bottom, 0xFF2B2B2B);
+
+        // Slightly lighter inner body.
+        graphics.fill(
+                left + 2,
+                top + 2,
+                right - 2,
+                bottom - 2,
+                0xFF666666);
+
+        // Sunken bevel: dark top/left and bright bottom/right.
+        graphics.fill(
+                left + 2,
+                top + 2,
+                right - 3,
+                top + 4,
+                0xFF3A3A3A);
+        graphics.fill(
+                left + 2,
+                top + 2,
+                left + 4,
+                bottom - 3,
+                0xFF3A3A3A);
+
+        graphics.fill(
+                left + 3,
+                bottom - 4,
+                right - 2,
+                bottom - 2,
+                0xFFD0D0D0);
+        graphics.fill(
+                right - 4,
+                top + 3,
+                right - 2,
+                bottom - 2,
+                0xFFD0D0D0);
+
+        // Narrower recessed centre behind the actual five slots. The slots are
+        // drawn afterwards, leaving this visible mainly as the RP2-style frame.
+        graphics.fill(
+                slotX,
+                y + 17,
+                slotX + 18,
+                y + 107,
+                0xFF747474);
     }
 
     private void drawIconButton(
