@@ -64,7 +64,7 @@ public class SortingMachineMenu extends AbstractContainerMenu {
         InventoryLib.addInventory(
                 sorter.getFilterInventory(),
                 0,
-                26,
+                34,
                 18,
                 SortingMachineBlockEntity.COLUMNS,
                 SortingMachineBlockEntity.ROWS,
@@ -72,7 +72,7 @@ public class SortingMachineMenu extends AbstractContainerMenu {
 
         InventoryLib.addPlayerInventory(
                 playerInventory,
-                8,
+                12,
                 140,
                 this::addSlot);
 

@@ -13,8 +13,10 @@ import net.minecraft.world.entity.player.Inventory;
 public class SortingMachineScreen
         extends RedUIContainerScreen<SortingMachineMenu> {
 
-    private static final int WIDTH = 176;
+    private static final int AUTO_CRAFTER_WIDTH = 176;
+    private static final int WIDTH = 184;
     private static final int HEIGHT = 222;
+    private static final int EXTRA_WIDTH = WIDTH - AUTO_CRAFTER_WIDTH;
 
     private static final ResourceLocation ICONS =
             ResourceLocation.fromNamespaceAndPath(
@@ -66,7 +68,7 @@ public class SortingMachineScreen
             Component title) {
 
         super(WIDTH, HEIGHT, menu, playerInventory, title);
-        inventoryLabelX = 8;
+        inventoryLabelX = 12;
         inventoryLabelY = 130;
     }
 
@@ -89,6 +91,16 @@ public class SortingMachineScreen
                 y + 14,
                 x + WIDTH - 5,
                 y + 129,
+                0xFFC6C6C6);
+
+        // The Auto Crafter's lower section is 176 px wide. Clear it and
+        // redraw the player inventory centred in our 8 px wider window so
+        // the left and right margins remain equal.
+        graphics.fill(
+                x + 5,
+                y + 129,
+                x + WIDTH - 5,
+                y + HEIGHT - 5,
                 0xFFC6C6C6);
 
         drawSequentialColumnEmbossed(graphics, x, y);
@@ -114,12 +126,28 @@ public class SortingMachineScreen
 
                 drawSlotFrame(
                         graphics,
-                        x + 25 + column * 18,
+                        x + 33 + column * 18,
                         y + 17 + row * 18,
                         interior);
             }
         }
 
+        // Keep the player's 9-wide inventory centred in the wider GUI.
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 9; column++) {
+                drawSlotFrame(
+                        graphics,
+                        x + 11 + column * 18,
+                        y + 139 + row * 18);
+            }
+        }
+
+        for (int column = 0; column < 9; column++) {
+            drawSlotFrame(
+                    graphics,
+                    x + 11 + column * 18,
+                    y + 197);
+        }
     }
 
     private static void drawSlotFrame(
@@ -236,45 +264,77 @@ public class SortingMachineScreen
             int y) {
 
         /*
-         * AutoCrafterScreen draws its window with one background blit:
+         * Preserve ProjectRed's actual Auto Crafter window pixels while
+         * widening the GUI by 8 px. The extra width is inserted immediately
+         * before the five-pixel right-hand bevel, so the bevel itself remains
+         * unchanged rather than being stretched.
          *
-         * graphics.blit(BACKGROUND, x, y, 0, 0,
-         *         getFrame().width(), getFrame().height());
-         *
-         * Its frame is 176x212 while the Sorting Machine needs 176x222.
-         * Keep every Auto Crafter pixel unchanged and insert ten copies of a
-         * neutral horizontal row immediately above the inventory section.
-         * The lower 92 pixels are then shifted down ten pixels. This preserves
-         * the exact ProjectRed bevel and inventory artwork without stretching.
+         * Vertically, retain the existing 10 px extension above the inventory
+         * section because the Sorting Machine is 222 px tall versus 212 px for
+         * the Auto Crafter.
          */
+        blitWideAutoCrafterSection(
+                graphics,
+                x,
+                y,
+                0,
+                120);
+
+        for (int i = 0; i < 10; i++) {
+            blitWideAutoCrafterSection(
+                    graphics,
+                    x,
+                    y + 120 + i,
+                    119,
+                    1);
+        }
+
+        blitWideAutoCrafterSection(
+                graphics,
+                x,
+                y + 130,
+                120,
+                92);
+    }
+
+    private static void blitWideAutoCrafterSection(
+            GuiGraphics graphics,
+            int x,
+            int y,
+            int sourceY,
+            int height) {
+
+        // Auto Crafter's right bevel occupies source x=171..175.
         graphics.blit(
                 BACKGROUND,
                 x,
                 y,
                 0,
-                0,
-                WIDTH,
-                120);
+                sourceY,
+                171,
+                height);
 
-        for (int i = 0; i < 10; i++) {
+        // Repeat the final neutral interior column to create the extra width.
+        for (int i = 0; i < EXTRA_WIDTH; i++) {
             graphics.blit(
                     BACKGROUND,
-                    x,
-                    y + 120 + i,
-                    0,
-                    119,
-                    WIDTH,
-                    1);
+                    x + 171 + i,
+                    y,
+                    170,
+                    sourceY,
+                    1,
+                    height);
         }
 
+        // Copy the original right bevel unchanged at its new location.
         graphics.blit(
                 BACKGROUND,
-                x,
-                y + 130,
-                0,
-                120,
-                WIDTH,
-                92);
+                x + 171 + EXTRA_WIDTH,
+                y,
+                171,
+                sourceY,
+                5,
+                height);
     }
 
     private void drawColumnColours(
@@ -288,7 +348,7 @@ public class SortingMachineScreen
 
             drawColourButton(
                     graphics,
-                    x + 28 + column * 18,
+                    x + 36 + column * 18,
                     y + 110,
                     menu.getColumnColour(column));
         }
@@ -338,7 +398,7 @@ public class SortingMachineScreen
         }
 
         int activeColumn = menu.getCurrentColumn();
-        int slotX = x + 25 + activeColumn * 18;
+        int slotX = x + 33 + activeColumn * 18;
         int top = y + 17;
         int bottom = y + 107;
 
@@ -548,7 +608,7 @@ public class SortingMachineScreen
                 column < SortingMachineBlockEntity.COLUMNS;
                 column++) {
 
-            if (inside(rx, ry, 28 + column * 18, 110, 12, 12)) {
+            if (inside(rx, ry, 36 + column * 18, 110, 12, 12)) {
                 int id = SortingMachineMenu.BUTTON_COLUMN_BASE
                         + column * 2
                         + (forward ? 0 : 1);
