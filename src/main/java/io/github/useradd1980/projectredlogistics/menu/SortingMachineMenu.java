@@ -211,4 +211,8 @@ public class SortingMachineMenu extends AbstractContainerMenu {
     public boolean canConductorWork() {
         return SortingMachineRules.hasOperatingPower(condCharge);
     }
+
+    public boolean isFlowFull() {
+        return condFlow == -1;
+    }
 }

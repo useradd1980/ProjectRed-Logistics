@@ -2,6 +2,7 @@ package io.github.useradd1980.projectredlogistics.client.screen;
 
 import io.github.useradd1980.projectredlogistics.block.entity.SortingMachineBlockEntity;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
+import mrtjp.projectred.lib.GuiLib;
 import mrtjp.projectred.lib.Point;
 import mrtjp.projectred.redui.RedUIContainerScreen;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,9 +21,19 @@ public class SortingMachineScreen
                     "projectred_logistics",
                     "textures/gui/sorting_machine_icons.png");
 
+    // Reuse ProjectRed Expansion's actual Auto Crafter power-meter artwork.
+    private static final ResourceLocation POWER_METERS =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_expansion",
+                    "textures/gui/auto_crafter.png");
+
     private static final int ICON_SIZE = 14;
     private static final int MODE_ICON_V = 0;
     private static final int PULL_ICON_V = 14;
+
+    private static final int PULL_CONTROL_Y = 78;
+    private static final int MODE_CONTROL_Y = 94;
+    private static final int DEFAULT_CONTROL_Y = 110;
 
     private static final int[] PAINT_COLOURS = {
             0xFFFFFF, 0xFF8000, 0xFF00FF, 0x6C80FF,
@@ -148,42 +159,51 @@ public class SortingMachineScreen
             int x,
             int y) {
 
-        drawPowerGauge(
-                graphics,
-                x + 7,
-                y + 18,
-                menu.getChargeScaled(46),
-                0xFF3D9EA7);
-
-        drawPowerGauge(
-                graphics,
-                x + 16,
-                y + 18,
-                menu.getFlowScaled(46),
-                0xFFC17A2B);
-    }
-
-    private static void drawPowerGauge(
-            GuiGraphics graphics,
-            int x,
-            int y,
-            int fill,
-            int fillColour) {
-
-        // Narrow recessed meter in the same visual language as the RP2 GUI.
-        graphics.fill(x, y, x + 7, y + 50, 0xFF373737);
-        graphics.fill(x + 1, y + 1, x + 6, y + 49, 0xFFC8C8C8);
-        graphics.fill(x + 2, y + 2, x + 5, y + 48, 0xFF555555);
-
-        int clamped = Math.max(0, Math.min(46, fill));
-        if (clamped > 0) {
-            graphics.fill(
-                    x + 2,
-                    y + 48 - clamped,
-                    x + 5,
-                    y + 48,
-                    fillColour);
+        // Match ProjectRed's Auto Crafter exactly: charged/flow icons above
+        // the same 7x48 vertical charge and flow tanks from auto_crafter.png.
+        if (menu.canConductorWork()) {
+            graphics.blit(
+                    POWER_METERS,
+                    x + 7,
+                    y + 16,
+                    177,
+                    18,
+                    7,
+                    9);
         }
+
+        GuiLib.drawVerticalTank(
+                graphics,
+                POWER_METERS,
+                x + 7,
+                y + 26,
+                177,
+                27,
+                7,
+                48,
+                menu.getChargeScaled(48));
+
+        if (menu.isFlowFull()) {
+            graphics.blit(
+                    POWER_METERS,
+                    x + 18,
+                    y + 16,
+                    185,
+                    18,
+                    7,
+                    9);
+        }
+
+        GuiLib.drawVerticalTank(
+                graphics,
+                POWER_METERS,
+                x + 18,
+                y + 26,
+                185,
+                27,
+                7,
+                48,
+                menu.getFlowScaled(48));
     }
 
     private void drawColumnColours(
@@ -215,14 +235,14 @@ public class SortingMachineScreen
         drawIconButton(
                 graphics,
                 x + 7,
-                y + 73,
+                y + PULL_CONTROL_Y,
                 menu.getPullMode() * ICON_SIZE,
                 PULL_ICON_V);
 
         drawIconButton(
                 graphics,
                 x + 7,
-                y + 91,
+                y + MODE_CONTROL_Y,
                 menu.getMode() * ICON_SIZE,
                 MODE_ICON_V);
 
@@ -232,7 +252,7 @@ public class SortingMachineScreen
             drawColourButton(
                     graphics,
                     x + 7,
-                    y + 109,
+                    y + DEFAULT_CONTROL_Y,
                     menu.getDefaultColour());
         }
     }
@@ -380,7 +400,7 @@ public class SortingMachineScreen
         int rx = mouseX - getFrame().x();
         int ry = mouseY - getFrame().y();
 
-        if (inside(rx, ry, 7, 18, 7, 50)) {
+        if (inside(rx, ry, 7, 16, 7, 58)) {
             graphics.renderTooltip(
                     font,
                     Component.literal(String.format(
@@ -391,7 +411,7 @@ public class SortingMachineScreen
             return;
         }
 
-        if (inside(rx, ry, 16, 18, 7, 50)) {
+        if (inside(rx, ry, 18, 16, 7, 58)) {
             graphics.renderTooltip(
                     font,
                     Component.literal("Power flow"),
@@ -400,7 +420,7 @@ public class SortingMachineScreen
             return;
         }
 
-        if (inside(rx, ry, 7, 73, ICON_SIZE, ICON_SIZE)) {
+        if (inside(rx, ry, 7, PULL_CONTROL_Y, ICON_SIZE, ICON_SIZE)) {
             graphics.renderTooltip(
                     font,
                     Component.literal(PULL_NAMES[menu.getPullMode()]),
@@ -409,7 +429,7 @@ public class SortingMachineScreen
             return;
         }
 
-        if (inside(rx, ry, 7, 91, ICON_SIZE, ICON_SIZE)) {
+        if (inside(rx, ry, 7, MODE_CONTROL_Y, ICON_SIZE, ICON_SIZE)) {
             graphics.renderTooltip(
                     font,
                     Component.literal(MODE_NAMES[menu.getMode()]),
@@ -421,7 +441,7 @@ public class SortingMachineScreen
         int mode = menu.getMode();
         if ((mode == SortingMachineBlockEntity.MODE_ANY_ITEM_DEFAULT
                 || mode == SortingMachineBlockEntity.MODE_WHOLE_STACK_DEFAULT)
-                && inside(rx, ry, 7, 109, 14, 14)) {
+                && inside(rx, ry, 7, DEFAULT_CONTROL_Y, 14, 14)) {
 
             graphics.renderTooltip(
                     font,
@@ -441,13 +461,13 @@ public class SortingMachineScreen
         int ry = (int) mouseY - getFrame().y();
         boolean forward = mouseButton == 0;
 
-        if (inside(rx, ry, 7, 73, 14, 14)) {
+        if (inside(rx, ry, 7, PULL_CONTROL_Y, 14, 14)) {
             return sendButton(forward
                     ? SortingMachineMenu.BUTTON_PULL_NEXT
                     : SortingMachineMenu.BUTTON_PULL_PREVIOUS);
         }
 
-        if (inside(rx, ry, 7, 91, 14, 14)) {
+        if (inside(rx, ry, 7, MODE_CONTROL_Y, 14, 14)) {
             return sendButton(forward
                     ? SortingMachineMenu.BUTTON_MODE_NEXT
                     : SortingMachineMenu.BUTTON_MODE_PREVIOUS);
@@ -468,7 +488,7 @@ public class SortingMachineScreen
         int mode = menu.getMode();
         if ((mode == SortingMachineBlockEntity.MODE_ANY_ITEM_DEFAULT
                 || mode == SortingMachineBlockEntity.MODE_WHOLE_STACK_DEFAULT)
-                && inside(rx, ry, 7, 109, 14, 14)) {
+                && inside(rx, ry, 7, DEFAULT_CONTROL_Y, 14, 14)) {
 
             return sendButton(forward
                     ? SortingMachineMenu.BUTTON_DEFAULT_NEXT
