@@ -202,7 +202,8 @@ public class SortingMachineScreen
             return;
         }
 
-        int slotX = x + 25 + menu.getCurrentColumn() * 18;
+        int activeColumn = menu.getCurrentColumn();
+        int slotX = x + 25 + activeColumn * 18;
         int top = y + 17;
         int bottom = y + 107;
 
@@ -212,47 +213,55 @@ public class SortingMachineScreen
          * Keep this deliberately vertical: the original GUI reads as a
          * pressed-in column with side bevels, not as a black box around the
          * entire column. The normal slot frames are drawn afterwards.
+         *
+         * Only draw rails between columns. At the outer edges of the 5x8 grid,
+         * an exterior rail creates an unwanted thick bar outside the slots.
          */
 
-        // Left recessed rail: dark outer edge, softer mid-tone, light inner lip.
-        graphics.fill(
-                slotX - 4,
-                top,
-                slotX - 2,
-                bottom,
-                0xFF343434);
-        graphics.fill(
-                slotX - 2,
-                top,
-                slotX - 1,
-                bottom,
-                0xFF666666);
-        graphics.fill(
-                slotX - 1,
-                top,
-                slotX,
-                bottom,
-                0xFFC8C8C8);
+        if (activeColumn > 0) {
+            // Left recessed rail: dark outer edge, softer mid-tone,
+            // light inner lip.
+            graphics.fill(
+                    slotX - 4,
+                    top,
+                    slotX - 2,
+                    bottom,
+                    0xFF343434);
+            graphics.fill(
+                    slotX - 2,
+                    top,
+                    slotX - 1,
+                    bottom,
+                    0xFF666666);
+            graphics.fill(
+                    slotX - 1,
+                    top,
+                    slotX,
+                    bottom,
+                    0xFFC8C8C8);
+        }
 
-        // Right recessed rail mirrors the left side.
-        graphics.fill(
-                slotX + 18,
-                top,
-                slotX + 19,
-                bottom,
-                0xFFC8C8C8);
-        graphics.fill(
-                slotX + 19,
-                top,
-                slotX + 20,
-                bottom,
-                0xFF666666);
-        graphics.fill(
-                slotX + 20,
-                top,
-                slotX + 22,
-                bottom,
-                0xFF343434);
+        if (activeColumn < SortingMachineBlockEntity.COLUMNS - 1) {
+            // Right recessed rail mirrors the left side.
+            graphics.fill(
+                    slotX + 18,
+                    top,
+                    slotX + 19,
+                    bottom,
+                    0xFFC8C8C8);
+            graphics.fill(
+                    slotX + 19,
+                    top,
+                    slotX + 20,
+                    bottom,
+                    0xFF666666);
+            graphics.fill(
+                    slotX + 20,
+                    top,
+                    slotX + 22,
+                    bottom,
+                    0xFF343434);
+        }
 
         // Slightly darken the channel behind the active column. The selected
         // slot interiors are also tinted separately in drawSlots().
