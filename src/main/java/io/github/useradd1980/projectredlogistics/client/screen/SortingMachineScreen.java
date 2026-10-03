@@ -203,57 +203,64 @@ public class SortingMachineScreen
         }
 
         int slotX = x + 25 + menu.getCurrentColumn() * 18;
-        int left = slotX - 3;
-        int top = y + 15;
-        int right = slotX + 21;
-        int bottom = y + 109;
+        int top = y + 17;
+        int bottom = y + 107;
 
-        // Heavy outer frame, matching the chunky recessed selection channel
-        // used by the original RP2 Sorting Machine GUI.
-        graphics.fill(left, top, right, bottom, 0xFF2B2B2B);
+        /*
+         * RP2-style recessed selection channel.
+         *
+         * Keep this deliberately vertical: the original GUI reads as a
+         * pressed-in column with side bevels, not as a black box around the
+         * entire column. The normal slot frames are drawn afterwards.
+         */
 
-        // Slightly lighter inner body.
+        // Left recessed rail: dark outer edge, softer mid-tone, light inner lip.
         graphics.fill(
-                left + 2,
-                top + 2,
-                right - 2,
-                bottom - 2,
+                slotX - 4,
+                top,
+                slotX - 2,
+                bottom,
+                0xFF343434);
+        graphics.fill(
+                slotX - 2,
+                top,
+                slotX - 1,
+                bottom,
                 0xFF666666);
+        graphics.fill(
+                slotX - 1,
+                top,
+                slotX,
+                bottom,
+                0xFFC8C8C8);
 
-        // Sunken bevel: dark top/left and bright bottom/right.
+        // Right recessed rail mirrors the left side.
         graphics.fill(
-                left + 2,
-                top + 2,
-                right - 3,
-                top + 4,
-                0xFF3A3A3A);
+                slotX + 18,
+                top,
+                slotX + 19,
+                bottom,
+                0xFFC8C8C8);
         graphics.fill(
-                left + 2,
-                top + 2,
-                left + 4,
-                bottom - 3,
-                0xFF3A3A3A);
+                slotX + 19,
+                top,
+                slotX + 20,
+                bottom,
+                0xFF666666);
+        graphics.fill(
+                slotX + 20,
+                top,
+                slotX + 22,
+                bottom,
+                0xFF343434);
 
-        graphics.fill(
-                left + 3,
-                bottom - 4,
-                right - 2,
-                bottom - 2,
-                0xFFD0D0D0);
-        graphics.fill(
-                right - 4,
-                top + 3,
-                right - 2,
-                bottom - 2,
-                0xFFD0D0D0);
-
-        // Narrower recessed centre behind the actual five slots. The slots are
-        // drawn afterwards, leaving this visible mainly as the RP2-style frame.
+        // Slightly darken the channel behind the active column. The selected
+        // slot interiors are also tinted separately in drawSlots().
         graphics.fill(
                 slotX,
-                y + 17,
+                top,
                 slotX + 18,
-                y + 107,
+                bottom,
                 0xFF747474);
     }
 
