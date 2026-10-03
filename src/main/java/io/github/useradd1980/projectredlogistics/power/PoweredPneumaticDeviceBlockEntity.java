@@ -142,17 +142,14 @@ public abstract class PoweredPneumaticDeviceBlockEntity
         return conductor;
     }
 
-    @Override
     public int getConductorCharge() {
         return (int) (conductor.getVoltage() * 10);
     }
 
-    @Override
     public int getConductorFlow() {
         return chargeFlow;
     }
 
-    @Override
     public boolean canConductorWork() {
         // Same 60 V operating threshold used by RP2's TileSorter.
         return getConductorCharge() > 600;
