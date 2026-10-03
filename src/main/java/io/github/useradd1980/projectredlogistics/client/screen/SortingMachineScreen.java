@@ -82,9 +82,11 @@ public class SortingMachineScreen
         drawAutoCrafterWindow(graphics, x, y);
 
         // Remove the Auto Crafter-specific plan/storage artwork from the
-        // upper work area while leaving its exact outer window bevel intact.
+        // upper work area while preserving its recessed power-meter well on
+        // the left. The meter border/recess is part of the Auto Crafter
+        // background, so leave that strip untouched.
         graphics.fill(
-                x + 5,
+                x + 35,
                 y + 14,
                 x + WIDTH - 5,
                 y + 129,
