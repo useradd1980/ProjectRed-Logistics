@@ -1,6 +1,7 @@
 package io.github.useradd1980.projectredlogistics.client;
 
 import io.github.useradd1980.projectredlogistics.client.screen.FilterScreen;
+import io.github.useradd1980.projectredlogistics.client.screen.ManagerScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.SortingMachineScreen;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import net.neoforged.bus.api.EventPriority;
@@ -34,5 +35,8 @@ public final class ProjectRedLogisticsClient {
         event.register(
                 LogisticsContent.SORTING_MACHINE_MENU.get(),
                 SortingMachineScreen::new);
+        event.register(
+                LogisticsContent.MANAGER_MENU.get(),
+                ManagerScreen::new);
     }
 }

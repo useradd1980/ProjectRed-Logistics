@@ -2,10 +2,13 @@ package io.github.useradd1980.projectredlogistics.init;
 
 import io.github.useradd1980.projectredlogistics.ProjectRedLogistics;
 import io.github.useradd1980.projectredlogistics.block.FilterBlock;
+import io.github.useradd1980.projectredlogistics.block.ManagerBlock;
 import io.github.useradd1980.projectredlogistics.block.SortingMachineBlock;
 import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
+import io.github.useradd1980.projectredlogistics.block.entity.ManagerBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.SortingMachineBlockEntity;
 import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
+import io.github.useradd1980.projectredlogistics.menu.ManagerMenu;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
 import codechicken.lib.inventory.container.CCLMenuType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,6 +32,7 @@ public final class LogisticsContent {
 
     public static final String ID_FILTER = "filter";
     public static final String ID_SORTING_MACHINE = "sorting_machine";
+    public static final String ID_MANAGER = "manager";
 
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(BuiltInRegistries.BLOCK, ProjectRedLogistics.MOD_ID);
@@ -55,6 +59,13 @@ public final class LogisticsContent {
             ITEMS.register(ID_SORTING_MACHINE,
                     () -> new BlockItem(SORTING_MACHINE_BLOCK.get(), new Item.Properties()));
 
+    public static final Supplier<Block> MANAGER_BLOCK =
+            BLOCKS.register(ID_MANAGER, ManagerBlock::new);
+
+    public static final Supplier<Item> MANAGER_ITEM =
+            ITEMS.register(ID_MANAGER,
+                    () -> new BlockItem(MANAGER_BLOCK.get(), new Item.Properties()));
+
     public static final Supplier<BlockEntityType<FilterBlockEntity>> FILTER_BLOCK_ENTITY =
             BLOCK_ENTITY_TYPES.register(
                     ID_FILTER,
@@ -69,6 +80,13 @@ public final class LogisticsContent {
                             .of(SortingMachineBlockEntity::new, SORTING_MACHINE_BLOCK.get())
                             .build(null));
 
+    public static final Supplier<BlockEntityType<ManagerBlockEntity>> MANAGER_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register(
+                    ID_MANAGER,
+                    () -> BlockEntityType.Builder
+                            .of(ManagerBlockEntity::new, MANAGER_BLOCK.get())
+                            .build(null));
+
     public static final Supplier<MenuType<FilterMenu>> FILTER_MENU =
             MENU_TYPES.register(ID_FILTER, () -> CCLMenuType.create(FilterMenu.FACTORY));
 
@@ -76,6 +94,11 @@ public final class LogisticsContent {
             MENU_TYPES.register(
                     ID_SORTING_MACHINE,
                     () -> CCLMenuType.create(SortingMachineMenu.FACTORY));
+
+    public static final Supplier<MenuType<ManagerMenu>> MANAGER_MENU =
+            MENU_TYPES.register(
+                    ID_MANAGER,
+                    () -> CCLMenuType.create(ManagerMenu.FACTORY));
 
     public static final Supplier<CreativeModeTab> LOGISTICS_TAB =
             CREATIVE_TABS.register(
@@ -87,6 +110,7 @@ public final class LogisticsContent {
                             .displayItems((parameters, output) -> {
                                 output.accept(FILTER_ITEM.get());
                                 output.accept(SORTING_MACHINE_ITEM.get());
+                                output.accept(MANAGER_ITEM.get());
                             })
                             .build());
 

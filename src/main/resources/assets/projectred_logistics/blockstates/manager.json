@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "active=false,side=0": {"model": "projectred_logistics:block/manager"},
+    "active=false,side=1": {"model": "projectred_logistics:block/manager", "x": 180, "y": 180},
+    "active=false,side=2": {"model": "projectred_logistics:block/manager", "x": 90, "y": 180},
+    "active=false,side=3": {"model": "projectred_logistics:block/manager", "x": 90},
+    "active=false,side=4": {"model": "projectred_logistics:block/manager", "x": 90, "y": 90},
+    "active=false,side=5": {"model": "projectred_logistics:block/manager", "x": 90, "y": 270},
+    "active=true,side=0": {"model": "projectred_logistics:block/manager_active"},
+    "active=true,side=1": {"model": "projectred_logistics:block/manager_active", "x": 180, "y": 180},
+    "active=true,side=2": {"model": "projectred_logistics:block/manager_active", "x": 90, "y": 180},
+    "active=true,side=3": {"model": "projectred_logistics:block/manager_active", "x": 90},
+    "active=true,side=4": {"model": "projectred_logistics:block/manager_active", "x": 90, "y": 90},
+    "active=true,side=5": {"model": "projectred_logistics:block/manager_active", "x": 90, "y": 270}
+  }
+}
