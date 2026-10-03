@@ -1,0 +1,341 @@
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayload.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayload.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayload.java
+@@ -0,0 +1,27 @@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.world.item.ItemStack;
++
++import javax.annotation.Nullable;
++
++/**
++ * Public view of an item travelling through ProjectRed's pneumatic network.
++ * Custom data belongs to the payload, not its contained ItemStack.
++ */
++public interface PneumaticPayload {
++
++    ItemStack getItemStack();
++
++    /** Whether this payload carries a compound for the specified namespaced key. */
++    boolean hasData(ResourceLocation key);
++
++    /** Returns a defensive copy, or null when absent. */
++    @Nullable CompoundTag getData(ResourceLocation key);
++
++    /** Stores a defensive copy. Does not mutate the ItemStack. */
++    void setData(ResourceLocation key, CompoundTag value);
++
++    void removeData(ResourceLocation key);
++}
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadData.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadData.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticPayloadData.java
+@@ -0,0 +1,48 @@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.nbt.Tag;
++import net.minecraft.resources.ResourceLocation;
++
++import javax.annotation.Nullable;
++import java.util.Objects;
++
++/**
++ * Namespaced payload-only metadata. Its NBT boundary methods always copy their
++ * inputs and outputs so unrelated consumers cannot share mutable tag instances.
++ */
++public final class PneumaticPayloadData {
++
++    private CompoundTag data = new CompoundTag();
++
++    public boolean has(ResourceLocation key) {
++        return data.contains(Objects.requireNonNull(key, "key").toString(), Tag.TAG_COMPOUND);
++    }
++
++    public @Nullable CompoundTag get(ResourceLocation key) {
++        return has(key) ? data.getCompound(key.toString()).copy() : null;
++    }
++
++    public void put(ResourceLocation key, CompoundTag value) {
++        data.put(Objects.requireNonNull(key, "key").toString(),
++                Objects.requireNonNull(value, "value").copy());
++    }
++
++    public void remove(ResourceLocation key) {
++        data.remove(Objects.requireNonNull(key, "key").toString());
++    }
++
++    public boolean isEmpty() {
++        return data.isEmpty();
++    }
++
++    /** Snapshot suitable for persistence or network serialization. */
++    public CompoundTag save() {
++        return data.copy();
++    }
++
++    /** Replaces any previous data, including when loading an old empty payload. */
++    public void load(CompoundTag saved) {
++        data = Objects.requireNonNull(saved, "saved").copy();
++    }
++}
+
+diff --git a/expansion/build.gradle b/expansion/build.gradle
+--- a/expansion/build.gradle
++++ b/expansion/build.gradle
+@@ -35,8 +35,9 @@ dependencies {
+     accessTransformers "io.codechicken:CodeChickenLib:${mc_version}-${ccl_version}"
+     accessTransformers "io.codechicken:CBMultipart:${mc_version}-${cbm_version}"
+ 
+     compileOnly project(":api")
++    testCompileOnly project(":api")
+     implementation project(":core")
+ 
+     compileOnly "maven.modrinth:embeddium:${embeddium_version}"
+     compileOnly "maven.modrinth:sodium:${sodium_version}"
+diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PneumaticPayloadDataTest.java
+@@ -0,0 +1,75 @@
++package mrtjp.projectred.expansion.pneumatics;
++
++import mrtjp.projectred.api.pneumatics.PneumaticPayloadData;
++import net.minecraft.nbt.CompoundTag;
++import net.minecraft.resources.ResourceLocation;
++import org.junit.jupiter.api.Test;
++
++import static org.junit.jupiter.api.Assertions.*;
++
++class PneumaticPayloadDataTest {
++
++    private static final ResourceLocation FIRST = ResourceLocation.fromNamespaceAndPath("first_mod", "request");
++    private static final ResourceLocation SECOND = ResourceLocation.fromNamespaceAndPath("second_mod", "request");
++
++    @Test
++    void keysFromDifferentModsDoNotCollide() {
++        PneumaticPayloadData data = new PneumaticPayloadData();
++        CompoundTag first = new CompoundTag();
++        first.putInt("count", 16);
++        CompoundTag second = new CompoundTag();
++        second.putInt("count", 64);
++
++        data.put(FIRST, first);
++        data.put(SECOND, second);
++
++        assertEquals(16, data.get(FIRST).getInt("count"));
++        assertEquals(64, data.get(SECOND).getInt("count"));
++        data.remove(FIRST);
++        assertFalse(data.has(FIRST));
++        assertTrue(data.has(SECOND));
++    }
++
++    @Test
++    void inputAndOutputTagsCannotMutateStoredData() {
++        PneumaticPayloadData data = new PneumaticPayloadData();
++        CompoundTag original = new CompoundTag();
++        original.putInt("count", 7);
++        data.put(FIRST, original);
++
++        original.putInt("count", 99);
++        assertEquals(7, data.get(FIRST).getInt("count"));
++
++        CompoundTag received = data.get(FIRST);
++        received.putInt("count", 23);
++        assertEquals(7, data.get(FIRST).getInt("count"));
++
++        CompoundTag snapshot = data.save();
++        snapshot.getCompound(FIRST.toString()).putInt("count", 100);
++        assertEquals(7, data.get(FIRST).getInt("count"));
++    }
++
++    @Test
++    void metadataRoundTripsThroughNbtAndOldEmptyPayloadsClearPreviousData() {
++        PneumaticPayloadData original = new PneumaticPayloadData();
++        CompoundTag request = new CompoundTag();
++        request.putString("target", "warehouse");
++        original.put(FIRST, request);
++
++        PneumaticPayloadData loaded = new PneumaticPayloadData();
++        loaded.load(original.save());
++        assertEquals("warehouse", loaded.get(FIRST).getString("target"));
++
++        loaded.load(new CompoundTag()); // Legacy ProjectRed payload with no metadata
++        assertTrue(loaded.isEmpty());
++        assertNull(loaded.get(FIRST));
++    }
++
++    @Test
++    void missingKeysAndNullValuesHavePredictableBehaviour() {
++        PneumaticPayloadData data = new PneumaticPayloadData();
++        assertFalse(data.has(FIRST));
++        assertNull(data.get(FIRST));
++        assertThrows(NullPointerException.class, () -> data.put(FIRST, null));
++    }
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePayload.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePayload.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePayload.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePayload.java
+@@ -1,120 +1,157 @@
+ package mrtjp.projectred.expansion.part;
+ 
+ import codechicken.lib.data.MCDataInput;
+ import codechicken.lib.data.MCDataOutput;
++import mrtjp.projectred.api.pneumatics.PneumaticPayload;
++import mrtjp.projectred.api.pneumatics.PneumaticPayloadData;
+ import net.minecraft.core.HolderLookup;
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.nbt.Tag;
++import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.world.item.ItemStack;
+ 
+-public class PneumaticTubePayload {
++public class PneumaticTubePayload implements PneumaticPayload {
+ 
++    private static final String PAYLOAD_DATA_KEY = "projectred_payload_data";
++
+     public static final int MAX_PROGRESS = 255;
+ 
+     private int progress;
+     private int speed;
+ 
+     private int inputSide = -1;
+     private int outputSide = -1;
+ 
+     private ItemStack itemStack;
++    private final PneumaticPayloadData customData = new PneumaticPayloadData();
+ 
+     public PneumaticTubePayload(ItemStack itemStack) {
+         this.itemStack = itemStack;
+     }
+ 
+     public PneumaticTubePayload() {
+         this(ItemStack.EMPTY);
+     }
+ 
+     public int getProgress() {
+         return progress;
+     }
+ 
+     public int getSpeed() {
+         return speed;
+     }
+ 
+     public void setProgress(int prog) {
+         progress = prog;
+     }
+ 
+     public void setSpeed(int spd) {
+         speed = spd;
+     }
+ 
+     public void incrementProgress() {
+         progress += speed;
+     }
+ 
+     public void setInputSide(int s) {
+         inputSide = s;
+     }
+ 
+     public void setOutputSide(int s) {
+         outputSide = s;
+     }
+ 
+     public int getInputSide() {
+         return inputSide;
+     }
+ 
+     public int getOutputSide() {
+         return outputSide;
+     }
+ 
+     public boolean hasOutputSide() {
+         return outputSide != -1;
+     }
+ 
+     public void resetOutput() {
+         outputSide = -1;
+     }
+ 
+     public void resetProgress() {
+         progress = Math.max(0, progress - MAX_PROGRESS);
+     }
+ 
+     public boolean isPassedHalfWay() {
+         return progress > MAX_PROGRESS / 2;
+     }
+ 
+     public int getCurrentSide() {
+         return progress < MAX_PROGRESS / 2 ? inputSide : outputSide;
+     }
+ 
++    @Override
+     public ItemStack getItemStack() {
+         return itemStack;
+     }
+ 
++    @Override
++    public boolean hasData(ResourceLocation key) {
++        return customData.has(key);
++    }
++
++    @Override
++    public CompoundTag getData(ResourceLocation key) {
++        return customData.get(key);
++    }
++
++    @Override
++    public void setData(ResourceLocation key, CompoundTag value) {
++        customData.put(key, value);
++    }
++
++    @Override
++    public void removeData(ResourceLocation key) {
++        customData.remove(key);
++    }
++
+     public void save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+         tag.putInt("progress", progress); //TODO size
+         tag.putInt("speed", speed);
+         tag.putInt("input_dir", inputSide);
+         tag.putInt("output_dir", outputSide);
+         tag.put("item_stack", itemStack.save(lookupProvider));
++        if (customData.isEmpty()) {
++            tag.remove(PAYLOAD_DATA_KEY);
++        } else {
++            tag.put(PAYLOAD_DATA_KEY, customData.save());
++        }
+     }
+ 
+     public void load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+         progress = tag.getInt("progress");
+         speed = tag.getInt("speed");
+         inputSide = tag.getInt("input_dir");
+         outputSide = tag.getInt("output_dir");
+         itemStack = ItemStack.parseOptional(lookupProvider, tag.getCompound("item_stack"));
++        customData.load(tag.contains(PAYLOAD_DATA_KEY, Tag.TAG_COMPOUND)
++                ? tag.getCompound(PAYLOAD_DATA_KEY) : new CompoundTag());
+     }
+ 
+     public void writeDesc(MCDataOutput output) {
+         output.writeByte(progress);
+         output.writeByte(speed);
+         output.writeByte(inputSide);
+         output.writeByte(outputSide);
+         output.writeItemStack(itemStack);
++        output.writeCompoundNBT(customData.save());
+     }
+ 
+     public void readDesc(MCDataInput input) {
+         progress = input.readByte();
+         speed = input.readByte();
+         inputSide = input.readByte();
+         outputSide = input.readByte();
+         itemStack = input.readItemStack();
++        customData.load(input.readCompoundNBT());
+     }
+ }

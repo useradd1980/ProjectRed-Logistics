@@ -10,39 +10,56 @@
 
 ## Milestone 1 — Generic pneumatic API prototype
 
-- [ ] Add public `PneumaticPayload` abstraction.
-- [ ] Add namespaced payload metadata.
-- [ ] Persist metadata through NBT.
-- [ ] Synchronize metadata to clients.
-- [ ] Add `PneumaticRoutePolicy` registration.
-- [ ] Add `PneumaticRouteContext`.
-- [ ] Add `PneumaticRouteDecision`.
-- [ ] Integrate policy evaluation without making the whole topology graph
-      payload-specific.
-- [ ] Add a test proving a longer allowed path beats a shorter blocked path.
+- [x] Prototype public `PneumaticPayload` abstraction in upstream patch 0001.
+- [x] Prototype namespaced payload metadata with defensive copies.
+- [x] Implement NBT persistence and packet description serialization in patch 0001.
+- [x] Add four focused JUnit tests (execution pending in CI).
+- [ ] Confirm full dependency-resolved ProjectRed test/build passes.
+- [x] Prototype `PneumaticRoutePolicy` registration in upstream patch 0002.
+- [x] Prototype stable `PneumaticRouteContext` and routing-node context in patch 0002.
+- [x] Prototype `PneumaticRouteDecision` with allow/block and non-negative added cost.
+- [x] Prototype payload-aware Dijkstra routing over ProjectRed's cached graph links.
+- [x] Add routing-significant-node hook so restricted tubes are not hidden inside compressed links.
+- [ ] Add an integration-style graph test proving a longer allowed path beats a shorter blocked path.
 - [ ] Confirm behaviour is identical when no policies are registered.
 
 ## Milestone 2 — ProjectRed Logistics integration
 
-- [ ] Register a colour-routing policy.
-- [ ] Add paint state through the agreed generic extension.
-- [ ] Dye / repaint / clear-paint interactions.
-- [ ] Render painted tubes.
-- [ ] Assign and preserve payload colours.
+- [x] Register a colour-routing policy.
+- [x] Store tube paint as namespaced metadata through the generic tube API.
+- [x] Add dye/repaint interaction plus temporary sneak-empty-hand clearing.
+- [x] Add first-pass client rendering for painted tubes.
+- [x] Assign and preserve payload colours.
 - [ ] Validate routing across junctions and loops.
+- [x] Disconnect differently painted adjacent tubes at the physical topology level.
 
-## Milestone 3 — Sorting Machine
+## Milestone 3 — Filter
 
-- [ ] Block/entity/model.
-- [ ] RP2-style GUI.
-- [ ] Filter columns.
-- [ ] Colour assignment.
-- [ ] Sorting modes.
-- [ ] Default route behaviour.
-- [ ] Stack handling.
-- [ ] Automated tests.
+- [x] Register Filter block/entity and first-pass model.
+- [x] Add nine real, persistent filter slots.
+- [x] Implement empty-filter whole-stack extraction.
+- [x] Implement quantity-sensitive configured extraction.
+- [x] Assign optional routing colour to outgoing payloads.
+- [x] Add functional 3x3 Filter inventory GUI.
+- [x] Match RP2 Filter slot layout and add 17-state colour selector.
+- [x] Filter incoming tube payloads by configured entries and retag accepted payloads with the Filter colour.
+- [x] Add automated tests for Filter matching, payload recolouring, and colour compatibility.
 
-## Milestone 4 — Manager
+## Milestone 4 — Sorting Machine
+
+- [x] Block/entity and first-pass model.
+- [x] Functional RP2-positioned 5x8 GUI.
+- [x] Eight filter columns with independent route colours.
+- [x] Inline payload sorting and colour assignment.
+- [x] Implement seven pr6 sorting modes for adjacent-inventory extraction.
+- [x] Default route behaviour for modes 4 and 6.
+- [x] Configured-batch and whole-stack handling.
+- [x] Add Single Step, Automatic, and Single Sweep pull-mode state/behaviour.
+- [x] Integrate ProjectRed low-load power with RP2's >60 V threshold and 25 power units per processed item.
+- [ ] Replace placeholder Filter-derived block texture with Sorting Machine art.
+- [x] Add automated tests for pr6 mode families, default-route acceptance, and whole-stack extraction quantities.
+
+## Milestone 5 — Manager
 
 - [ ] Inventory template.
 - [ ] Stock-level evaluation.

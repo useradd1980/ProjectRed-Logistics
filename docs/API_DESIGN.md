@@ -39,7 +39,22 @@ public interface PneumaticPayload {
 }
 ```
 
-ProjectRed's internal `PneumaticTubePayload` implements this interface.
+ProjectRed's internal `PneumaticTubePayload` implements this interface. The
+first prototype patch introduces `PneumaticPayloadData` as the reusable
+storage helper. Its compound-valued keys are `ResourceLocation` namespaced
+identifiers, and all set/get/save/load methods defensively copy mutable NBT.
+
+The patch stores the entire metadata compound under
+`projectred_payload_data` on the payload itself (not on the ItemStack).
+Missing data in an existing/older saved payload becomes an empty container.
+For client updates it uses CodeChickenLib's `writeCompoundNBT` and
+`readCompoundNBT` helpers in the payload's existing description codec.
+
+Patch location:
+`upstream/patches/0001-generic-pneumatic-payload-metadata.patch`.
+
+ProjectRed's published 4.23.0 artifacts do **not** contain this proposed API;
+the standalone addon does not yet call it.
 
 Metadata must survive:
 
@@ -84,8 +99,17 @@ public interface PneumaticRoutePolicy {
         PneumaticPayload payload,
         PneumaticRouteContext context
     );
+
+    default boolean requiresRoutingNode(PneumaticRouteNodeContext context) {
+        return false;
+    }
 }
 ```
+
+The second callback is important because ProjectRed compresses physically
+redundant tube runs into graph links. A tube carrying routing-significant state
+(such as paint, access control, or a one-way rule) must remain represented as a
+graph node or the payload-aware search would never see it.
 
 Registration should follow ProjectRed's existing Expansion API pattern:
 
@@ -111,15 +135,23 @@ colour filter cannot recover the valid route.
 
 ## Recommended prototype strategy
 
-Do not make the entire graph payload-specific.
+Do not make the entire physical graph payload-specific.
 
-Instead:
+Patch 0002 takes this approach:
 
-1. Preserve ProjectRed's existing topology cache.
-2. Add a pneumatic, payload-aware route evaluation layer over that topology.
-3. Allow policies to reject candidate transitions and increase traversal cost.
-4. Cache only topology globally; cache payload-specific route decisions only
-   when an addon supplies a stable cache key.
+1. Preserve ProjectRed's existing topology/link cache.
+2. Keep the current route-table fast path when no pneumatic policies exist.
+3. When policies are registered, run a payload-aware Dijkstra search over the
+   already-cached graph links.
+4. Allow policies to reject transitions or add non-negative traversal cost.
+5. Allow policies to mark physical tube locations as routing-significant so
+   those locations are retained as graph nodes instead of disappearing inside
+   compressed links.
+6. Do not expose internal GraphNode, GraphLink, or GraphRoute classes through
+   the public API.
+
+This solves the "short blocked path hides longer valid path" problem without
+rediscovering the entire physical tube network for every payload.
 
 ## ProjectRed Logistics use
 
@@ -151,3 +183,25 @@ These remain entirely in ProjectRed Logistics:
 - stock templates
 - Manager-to-Manager requests
 - RP2-compatible colour semantics
+
+
+## Prototype patch 0002
+
+Location:
+`upstream/patches/0002-generic-pneumatic-route-policy.patch`
+
+The prototype adds:
+
+- `PneumaticRouteDecision`
+- `PneumaticRouteContext`
+- `PneumaticRouteNodeContext`
+- `PneumaticRoutePolicy`
+- route-policy registration through `IExpansionAPI`
+- an internal policy registry
+- a policy-aware Dijkstra search over cached graph links
+- routing-significant-node retention
+- unit coverage for route-decision cost validation
+
+The next validation target is an integration-style topology test where a
+shorter route is blocked by a policy and a longer route to the same reachable
+inventory remains selectable.
