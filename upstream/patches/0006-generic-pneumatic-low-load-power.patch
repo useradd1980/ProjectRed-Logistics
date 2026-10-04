@@ -52,7 +52,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubePow
 new file mode 100644
 --- /dev/null
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubePowerRegistry.java
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,32 @@
 +package mrtjp.projectred.expansion;
 +
 +import mrtjp.projectred.api.pneumatics.PneumaticTube;
@@ -88,7 +88,7 @@ new file mode 100644
 diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 --- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
 +++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
-@@ -12,8 +12,14 @@ import mrtjp.projectred.api.pneumatics.PneumaticTube;
+@@ -12,7 +12,13 @@ import mrtjp.projectred.api.pneumatics.PneumaticTube;
  import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
  import mrtjp.projectred.core.CenterLookup;
 +import mrtjp.projectred.core.power.ILowLoadMachine;
@@ -102,13 +102,13 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
  import mrtjp.projectred.expansion.TubeType;
  import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
  import mrtjp.projectred.expansion.graphs.ClientSideLinkCache;
-@@ -31,6 +37,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
+@@ -31,4 +37,5 @@ import net.neoforged.neoforge.capabilities.Capabilities;
  
 +import java.util.ArrayList;
  import java.util.Collection;
  import java.util.Collections;
  import java.util.List;
-@@ -41,7 +48,9 @@ import static mrtjp.projectred.core.client.particle.ParticleAction.*;
+@@ -41,6 +48,7 @@ import static mrtjp.projectred.core.client.particle.ParticleAction.*;
  import static mrtjp.projectred.expansion.ProjectRedExpansion.LOGGER;
  
 -public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart, PneumaticTube {
@@ -125,7 +125,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
  
      private int lastRoundRobinDir = -1;
  
-@@ -70,6 +80,51 @@ public PneumaticTransport getPneumaticTransport() {
+@@ -70,6 +80,56 @@ public PneumaticTransport getPneumaticTransport() {
          return transport;
      }
  
@@ -191,7 +191,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
  
          // Connection policy may depend on metadata. Neighbouring multipart
          // tubes must also rebuild their masks when this tube's metadata changes.
-@@ -273,6 +328,10 @@ public void tick() {
+@@ -273,5 +328,9 @@ public void tick() {
          super.tick();
          transport.tick();
 +
@@ -201,7 +201,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
      }
      //endregion
  
-@@ -287,6 +346,11 @@ public boolean canConnectPart(IConnectable part, int s) {
+@@ -287,6 +346,12 @@ public boolean canConnectPart(IConnectable part, int s) {
              return false;
          }
  
@@ -214,7 +214,7 @@ diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTu
          if (part instanceof PneumaticTransportContainer) return true;
  
          return super.canConnectPart(part, s);
-@@ -295,6 +359,20 @@ public boolean canConnectPart(IConnectable part, int s) {
+@@ -295,5 +359,20 @@ public boolean canConnectPart(IConnectable part, int s) {
      @Override
      public boolean discoverStraightOverride(int s) {
 +        if (isLowLoadPowerEnabled()) {
