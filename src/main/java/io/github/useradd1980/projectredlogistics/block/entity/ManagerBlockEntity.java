@@ -60,6 +60,10 @@ public class ManagerBlockEntity
     private static final String TAG_COLOUR = "route_colour";
     private static final String TAG_PRIORITY = "priority";
     private static final String TAG_REQUEST_CURSOR = "request_cursor";
+    private static final String TAG_REQUEST_IN_FLIGHT = "request_in_flight";
+    private static final String TAG_REQUEST_TIMEOUT = "request_timeout";
+
+    private static final int REQUEST_TIMEOUT_TICKS = 600;
 
     private final BaseContainer templateInventory =
             new BaseContainer(TEMPLATE_SIZE);
@@ -69,6 +73,8 @@ public class ManagerBlockEntity
     private int priority = 0;
     private int requestCursor = 0;
     private int requestCooldown = 0;
+    private boolean requestInFlight = false;
+    private int requestTimeout = 0;
 
     public ManagerBlockEntity(BlockPos pos, BlockState state) {
         super(LogisticsContent.MANAGER_BLOCK_ENTITY.get(), pos, state);
@@ -87,6 +93,8 @@ public class ManagerBlockEntity
         tag.putInt(TAG_COLOUR, routeColour);
         tag.putInt(TAG_PRIORITY, priority);
         tag.putInt(TAG_REQUEST_CURSOR, requestCursor);
+        tag.putBoolean(TAG_REQUEST_IN_FLIGHT, requestInFlight);
+        tag.putInt(TAG_REQUEST_TIMEOUT, requestTimeout);
     }
 
     @Override
@@ -105,6 +113,11 @@ public class ManagerBlockEntity
                 tag.getInt(TAG_REQUEST_CURSOR),
                 0,
                 TEMPLATE_SIZE - 1);
+        requestInFlight = tag.getBoolean(TAG_REQUEST_IN_FLIGHT);
+        requestTimeout = Math.max(0, tag.getInt(TAG_REQUEST_TIMEOUT));
+        if (requestTimeout == 0) {
+            requestInFlight = false;
+        }
     }
     //endregion
 
@@ -135,6 +148,14 @@ public class ManagerBlockEntity
             requestCooldown--;
         }
 
+        if (requestInFlight) {
+            if (requestTimeout > 0) {
+                requestTimeout--;
+            } else {
+                requestInFlight = false;
+            }
+        }
+
         if (getLevel().getGameTime() % 10 != 0) return;
         if (!canConductorWork()) return;
         if (!itemQueue.isEmpty()) return;
@@ -144,7 +165,9 @@ public class ManagerBlockEntity
 
         if (exportOneSurplus(rear)) return;
 
-        if (mode == MODE_STOCK && requestCooldown == 0) {
+        if (mode == MODE_STOCK
+                && requestCooldown == 0
+                && !requestInFlight) {
             requestOneMissingStack(rear);
         }
     }
@@ -165,9 +188,35 @@ public class ManagerBlockEntity
             return false;
         }
 
+        var source = ManagerRoutingData.getSource(payload);
         var target = ManagerRoutingData.getTarget(payload);
-        if (target.isPresent() && !target.get().equals(getBlockPos())) {
+
+        boolean returningToSource =
+                transportMode == PneumaticTransportMode.PASSIVE_BACKSTUFF
+                        && source.isPresent()
+                        && source.get().equals(getBlockPos())
+                        && (target.isEmpty()
+                        || !target.get().equals(getBlockPos()));
+
+        if (!returningToSource
+                && target.isPresent()
+                && !target.get().equals(getBlockPos())) {
             return false;
+        }
+
+        RearInventory rear = getRearInventory();
+        if (rear == null) return false;
+
+        ItemStack stack = payload.getItemStack();
+
+        /*
+         * A requested payload that could not be fully accepted by its target
+         * must be able to backstuff into the Manager that supplied it. This
+         * is the modern equivalent of RP2's state-2 bounce path.
+         */
+        if (returningToSource) {
+            ItemStack probe = stack.copy();
+            return rear.insert(probe, true) > 0;
         }
 
         int payloadPriority =
@@ -180,10 +229,6 @@ public class ManagerBlockEntity
             return false;
         }
 
-        RearInventory rear = getRearInventory();
-        if (rear == null) return false;
-
-        ItemStack stack = payload.getItemStack();
         int wanted = acceptedCount(rear, stack);
         if (wanted <= 0) return false;
 
@@ -209,9 +254,21 @@ public class ManagerBlockEntity
         if (rear == null) return false;
 
         ItemStack travelling = payload.getItemStack();
-        int wanted = Math.min(
-                travelling.getCount(),
-                acceptedCount(rear, travelling));
+
+        var source = ManagerRoutingData.getSource(payload);
+        var target = ManagerRoutingData.getTarget(payload);
+
+        boolean returningToSource =
+                source.isPresent()
+                        && source.get().equals(getBlockPos())
+                        && (target.isEmpty()
+                        || !target.get().equals(getBlockPos()));
+
+        int wanted = returningToSource
+                ? travelling.getCount()
+                : Math.min(
+                        travelling.getCount(),
+                        acceptedCount(rear, travelling));
         if (wanted <= 0) return false;
 
         ItemStack toInsert = travelling.copy();
@@ -222,6 +279,15 @@ public class ManagerBlockEntity
 
         travelling.shrink(inserted);
         drawManagerPower(inserted);
+
+        // Receipt of our requested payload completes the outstanding request.
+        // Any remaining shortage will be detected on a later stock scan.
+        if (target.isPresent()
+                && target.get().equals(getBlockPos())) {
+            requestInFlight = false;
+            requestTimeout = 0;
+            requestCooldown = 20;
+        }
 
         active = true;
         pushBlockState();
@@ -277,6 +343,8 @@ public class ManagerBlockEntity
             if (requestFromNetwork(
                     template,
                     Math.min(64, missing))) {
+                requestInFlight = true;
+                requestTimeout = REQUEST_TIMEOUT_TICKS;
                 requestCooldown = 20;
                 setChanged();
             }
@@ -481,6 +549,7 @@ public class ManagerBlockEntity
         FilterRules.applyOutputColour(payload, routeColour);
         ManagerRoutingData.setRequest(
                 payload,
+                getBlockPos(),
                 target,
                 requesterPriority);
 
@@ -676,6 +745,8 @@ public class ManagerBlockEntity
 
     public void cycleMode(boolean forward) {
         mode = cycle(mode, MODE_STOCK, MODE_EXCESS, forward);
+        requestInFlight = false;
+        requestTimeout = 0;
         setChanged();
     }
 
