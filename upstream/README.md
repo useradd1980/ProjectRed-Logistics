@@ -15,6 +15,7 @@ Apply in order:
 3. `patches/0003-generic-pneumatic-tube-metadata.patch`
 4. `patches/0004-generic-pneumatic-entry-policy.patch`
 5. `patches/0005-generic-pneumatic-tube-connection-policy.patch`
+6. `patches/0006-generic-pneumatic-low-load-power.patch`
 
 Suggested workflow:
 
@@ -38,6 +39,9 @@ git apply /path/to/ProjectRed-Logistics/upstream/patches/0004-generic-pneumatic-
 
 git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0005-generic-pneumatic-tube-connection-policy.patch
 git apply /path/to/ProjectRed-Logistics/upstream/patches/0005-generic-pneumatic-tube-connection-policy.patch
+
+git apply --check /path/to/ProjectRed-Logistics/upstream/patches/0006-generic-pneumatic-low-load-power.patch
+git apply /path/to/ProjectRed-Logistics/upstream/patches/0006-generic-pneumatic-low-load-power.patch
 ```
 
 ## Patch 0001 — payload metadata
@@ -122,3 +126,20 @@ tube-to-tube connections while ProjectRed rebuilds connection masks.
 This is intentionally separate from payload route policies: a connection policy
 changes the actual topology and therefore also affects tube geometry. Tube
 metadata changes force local and neighbouring tube masks to be recalculated.
+
+## Patch 0006 — optional low-load power conduction
+
+Adds a generic opt-in hook that lets addons mark pneumatic tubes as low-load
+power conductors without teaching ProjectRed about addon-specific materials.
+
+ProjectRed owns the electrical simulation and exposes the tube as a normal
+low-load power line only while at least one registered predicate enables it.
+ProjectRed Logistics uses this for Electrotine Alloy-lined pneumatic tubes.
+
+Enabled tubes can connect to:
+
+- other enabled pneumatic tubes
+- Low Load Power Line and Framed Low Load Power Line
+- ProjectRed low-load machines, including the powered Logistics machines
+
+Plain pneumatic tubes remain electrically inert.
