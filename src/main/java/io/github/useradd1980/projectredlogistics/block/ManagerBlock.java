@@ -5,7 +5,9 @@ import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
 import mrtjp.projectred.core.block.ProjectRedBlock;
 import mrtjp.projectred.expansion.block.BaseDeviceBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,6 +32,34 @@ public class ManagerBlock extends BaseDeviceBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ManagerBlockEntity(pos, state);
+    }
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getSignal(
+            BlockState state,
+            BlockGetter level,
+            BlockPos pos,
+            Direction direction) {
+
+        if (!(level.getBlockEntity(pos)
+                instanceof ManagerBlockEntity manager)
+                || !manager.isStockSatisfied()) {
+            return 0;
+        }
+
+        /*
+         * RP2's Manager emitted weak power (level 1) from every face except
+         * the rear inventory face. Minecraft's signal query direction points
+         * from the receiving block toward this block, so a query matching the
+         * Manager's front side corresponds to the Manager's rear face.
+         */
+        int frontSide = state.getValue(ProjectRedBlock.SIDE);
+        return direction.ordinal() == frontSide ? 0 : 1;
     }
 
     @Override
