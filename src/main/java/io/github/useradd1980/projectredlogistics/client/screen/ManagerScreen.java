@@ -21,6 +21,11 @@ public class ManagerScreen
                     "projectred_expansion",
                     "textures/gui/auto_crafter.png");
 
+    private static final ResourceLocation RP2_MANAGER_GUI =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/rp2_manager.png");
+
     private static final int MODE_X = 153;
     private static final int MODE_Y = 37;
     private static final int PRIORITY_X = 153;
@@ -194,21 +199,18 @@ public class ManagerScreen
             int x,
             int y) {
 
-        drawControlFrame(graphics, x + MODE_X, y + MODE_Y);
+        // Exact RP2 Manager Stock/Excess mode button.
+        graphics.blit(
+                RP2_MANAGER_GUI,
+                x + MODE_X,
+                y + MODE_Y,
+                191,
+                14 * menu.getMode(),
+                CONTROL_SIZE,
+                CONTROL_SIZE);
+
         drawControlFrame(graphics, x + PRIORITY_X, y + PRIORITY_Y);
         drawControlFrame(graphics, x + COLOUR_X, y + COLOUR_Y);
-
-        String modeText =
-                menu.getMode() == ManagerBlockEntity.MODE_STOCK
-                        ? "S"
-                        : "E";
-        graphics.drawString(
-                font,
-                modeText,
-                x + MODE_X + 5,
-                y + MODE_Y + 3,
-                0xFFFFFFFF,
-                true);
 
         String priority = Integer.toString(menu.getPriority());
         graphics.drawString(
