@@ -1,5 +1,8 @@
 {
   "parent": "minecraft:item/generated",
-  "class": "mrtjp.projectred.expansion.client.TubePartItemRenderer",
+  "textures": {
+    "layer0": "projectred_logistics:block/restriction_tube"
+  },
+  "class": "io.github.useradd1980.projectredlogistics.client.RestrictionTubeItemRenderer",
   "loader": "codechickenlib:class"
 }
