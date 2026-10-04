@@ -8,9 +8,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import org.jetbrains.annotations.Nullable;
 
 public class ManagerBlock extends BaseDeviceBlock {
@@ -25,7 +27,16 @@ public class ManagerBlock extends BaseDeviceBlock {
         int side = context.getNearestLookingDirection().ordinal();
         return defaultBlockState()
                 .setValue(ProjectRedBlock.SIDE, side)
-                .setValue(ProjectRedBlock.ACTIVE, false);
+                .setValue(ProjectRedBlock.ACTIVE, false)
+                .setValue(ProjectRedBlock.WORKING, false);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(
+            StateDefinition.Builder<Block, BlockState> builder) {
+
+        super.createBlockStateDefinition(builder);
+        builder.add(ProjectRedBlock.WORKING);
     }
 
     @Nullable
