@@ -3,5 +3,6 @@
   "itemGroup.projectred_logistics": "ProjectRed Logistics",
   "block.projectred_logistics.filter": "Filter",
   "block.projectred_logistics.sorting_machine": "Sorting Machine",
-  "block.projectred_logistics.manager": "Manager"
+  "block.projectred_logistics.manager": "Manager",
+  "item.projectred_logistics.restriction_tube": "Restriction Tube"
 }

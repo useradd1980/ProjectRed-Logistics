@@ -6,6 +6,7 @@ import io.github.useradd1980.projectredlogistics.interaction.TubePaintInteractio
 import io.github.useradd1980.projectredlogistics.power.TubePowerData;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsColourRoutePolicy;
 import io.github.useradd1980.projectredlogistics.routing.LogisticsTubeConnectionPolicy;
+import io.github.useradd1980.projectredlogistics.routing.RestrictionTubeRoutePolicy;
 import mrtjp.projectred.api.ProjectRedAPI;
 import mrtjp.projectred.api.pneumatics.PneumaticTube;
 import net.neoforged.bus.api.IEventBus;
@@ -52,13 +53,16 @@ public final class ProjectRedLogistics {
 
             ProjectRedAPI.expansionAPI.registerPneumaticRoutePolicy(
                     LogisticsColourRoutePolicy.INSTANCE);
+            ProjectRedAPI.expansionAPI.registerPneumaticRoutePolicy(
+                    RestrictionTubeRoutePolicy.INSTANCE);
             ProjectRedAPI.expansionAPI.registerPneumaticTubeConnectionPolicy(
                     LogisticsTubeConnectionPolicy.INSTANCE);
 
             registerPneumaticLowLoadPowerSupport();
 
             LOGGER.info(
-                    "Registered ProjectRed Logistics colour routing, tube connection and electrotine power support");
+                    "Registered ProjectRed Logistics colour routing, restriction routing, " +
+                    "tube connection and electrotine power support");
         });
     }
 

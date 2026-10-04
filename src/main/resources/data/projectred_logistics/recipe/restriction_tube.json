@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "projectred_expansion:pneumatic_tube"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "projectred_logistics:restriction_tube"
+  }
+}
