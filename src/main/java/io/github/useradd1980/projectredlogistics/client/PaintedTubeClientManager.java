@@ -18,8 +18,11 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
@@ -55,10 +58,15 @@ public final class PaintedTubeClientManager {
             new HashSet<>();
 
     /**
-     * Representative colour sampled from ProjectRed's Electrotine Alloy
-     * ingot artwork. Format is RGBA, matching CCL ColourMultiplier.
+     * Byte-for-byte copy of ProjectRed Transmission's
+     * low_load_power_wire.png. Using the actual wire texture gives the
+     * in-tube conductor the same alternating stripe colours as a normal
+     * Low Load Power Line instead of a flat blue tint.
      */
-    private static final int ELECTROTINE_RGBA = 0x0989CFFF;
+    private static final ResourceLocation ELECTROTINE_WIRE_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "block/electrotine_tube_wire");
 
     private PaintedTubeClientManager() { }
 
@@ -219,6 +227,7 @@ public final class PaintedTubeClientManager {
                     PaintedTubeInnerModelRenderer
                             .getOrGenerateModel(
                                     part.getConnMap()),
+                    part.getIcon(),
                     EnumColour
                             .values()[entry.getValue() & 0xF]
                             .rgba(),
@@ -253,7 +262,8 @@ public final class PaintedTubeClientManager {
                     ElectrotineTubeInnerModelRenderer
                             .getOrGenerateModel(
                                     part.getConnMap()),
-                    ELECTROTINE_RGBA,
+                    getElectrotineWireSprite(),
+                    0xFFFFFFFF,
                     pos,
                     camera,
                     poseStack,
@@ -313,9 +323,17 @@ public final class PaintedTubeClientManager {
         }
     }
 
+    @SuppressWarnings("deprecation")
+    private static TextureAtlasSprite getElectrotineWireSprite() {
+        return Minecraft.getInstance()
+                .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                .apply(ELECTROTINE_WIRE_TEXTURE);
+    }
+
     private static void renderInnerStrip(
             PneumaticTubePart part,
             codechicken.lib.render.CCModel model,
+            TextureAtlasSprite sprite,
             int rgba,
             BlockPos pos,
             Vec3 camera,
@@ -357,7 +375,7 @@ public final class PaintedTubeClientManager {
 
         model.render(
                 ccrs,
-                new IconTransformation(part.getIcon()),
+                new IconTransformation(sprite),
                 ColourMultiplier.instance(rgba));
 
         poseStack.popPose();
