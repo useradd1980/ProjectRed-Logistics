@@ -378,6 +378,20 @@ public class ManagerBlockEntity
                 continue;
             }
 
+            /*
+             * A tube can be removed after this route table was built. The
+             * GraphRoute still holds the old part object briefly, but its
+             * multipart tile has already been detached. Calling tube.pos()
+             * in that state dereferences a null tile and crashes the server.
+             *
+             * Skip stale destinations and invalidate the cached route table
+             * so the next Manager scan rebuilds it from the live topology.
+             */
+            if (tube.tile() == null || tube.tile().isRemoved()) {
+                start.getNode().markRouteTableChanged();
+                continue;
+            }
+
             if (requestFromManagersAtTube(
                     tube,
                     template,
@@ -396,10 +410,22 @@ public class ManagerBlockEntity
             int amount,
             Set<BlockPos> visitedManagers) {
 
+        /*
+         * Multipart removal detaches the part from its TileMultipart before
+         * every cached graph route necessarily disappears. Never call pos()
+         * on a detached part; MultiPart.pos() assumes tile() is non-null.
+         */
+        var multipart = tube.tile();
+        if (multipart == null || multipart.isRemoved()) {
+            return false;
+        }
+
+        BlockPos tubePos = multipart.getBlockPos();
+
         for (int s = 0; s < 6; s++) {
             CenterLookup lookup = CenterLookup.lookupStraightCenter(
                     getLevel(),
-                    tube.pos(),
+                    tubePos,
                     s);
 
             if (!(lookup.tile instanceof ManagerBlockEntity manager)
