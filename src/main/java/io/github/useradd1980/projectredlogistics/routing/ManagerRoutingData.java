@@ -16,6 +16,7 @@ public final class ManagerRoutingData {
             ResourceLocation.fromNamespaceAndPath(
                     ProjectRedLogistics.MOD_ID, "manager_request");
 
+    private static final String SOURCE = "source";
     private static final String TARGET = "target";
     private static final String PRIORITY = "priority";
 
@@ -23,13 +24,23 @@ public final class ManagerRoutingData {
 
     public static void setRequest(
             PneumaticPayload payload,
+            BlockPos source,
             BlockPos target,
             int priority) {
 
         CompoundTag tag = new CompoundTag();
+        tag.putLong(SOURCE, source.asLong());
         tag.putLong(TARGET, target.asLong());
         tag.putInt(PRIORITY, priority);
         payload.setData(REQUEST, tag);
+    }
+
+    public static Optional<BlockPos> getSource(PneumaticPayload payload) {
+        CompoundTag tag = payload.getData(REQUEST);
+        if (tag == null || !tag.contains(SOURCE, Tag.TAG_LONG)) {
+            return Optional.empty();
+        }
+        return Optional.of(BlockPos.of(tag.getLong(SOURCE)));
     }
 
     public static Optional<BlockPos> getTarget(PneumaticPayload payload) {
