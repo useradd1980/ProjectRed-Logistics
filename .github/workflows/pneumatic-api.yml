@@ -36,6 +36,7 @@ jobs:
             "0003-generic-pneumatic-tube-metadata.patch"
             "0004-generic-pneumatic-entry-policy.patch"
             "0005-generic-pneumatic-tube-connection-policy.patch"
+            "0006-generic-pneumatic-low-load-power.patch"
           )
 
           for NAME in "${PATCHES[@]}"; do
