@@ -21,6 +21,17 @@ other addons to use.
 - Powered tubes connect to Low Load Power Line and Framed Low Load Power Line.
 - RP2-inspired internal conductor rendering for routing colour and power.
 
+### Restriction Tube
+
+- RP2-compatible weighted routing: Restriction Tubes add a route cost of 1,000,000
+  instead of blocking transport.
+- Items prefer ordinary pneumatic routes whenever one is available, but can
+  still use Restriction Tubes as a fallback.
+- Uses the normal ProjectRed pneumatic-tube geometry with a warm
+  nickel/pewter outer frame so it fits the modern ProjectRed visual style.
+- Supports the same routing-colour, red-alloy, and Electrotine tube upgrades
+  as ordinary pneumatic tubes.
+
 ### Filter
 
 - RP2-style 3x3 filter inventory.
@@ -99,8 +110,8 @@ See:
 
 ProjectRed Logistics is under active development.
 
-The Filter, Sorting Machine, Manager, coloured routing, and Electrotine-powered
-tube systems are functional and being tested and refined. Current work is
+The Filter, Sorting Machine, Manager, Restriction Tube, coloured routing, and
+Electrotine-powered tube systems are functional and being tested and refined. Current work is
 focused on RP2 behaviour parity, visual polish, integration testing, recipes,
 and preparing the generic ProjectRed pneumatic changes for possible upstream
 submission.

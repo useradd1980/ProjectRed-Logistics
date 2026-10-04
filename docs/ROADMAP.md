@@ -151,9 +151,9 @@ through in-game testing.
 - [x] Apply the RP2-style 1,000,000 route cost through the generic route-policy
       API.
 - [x] Add the original RP2-style shapeless recipe: pneumatic tube + iron ingot.
-- [ ] Add dedicated RP2 Restriction Tube artwork instead of the temporary
-      standard pneumatic-tube appearance.
-- [ ] Validate placement and route preference in-game.
+- [x] Give the Restriction Tube a modern warm-silver nickel/pewter frame
+      derived from ProjectRed's pneumatic-tube texture.
+- [x] Validate placement and route preference in-game.
 - [ ] Validate coloured routing, red-alloy wiring, and Electrotine power
       coexistence on Restriction Tubes.
 
