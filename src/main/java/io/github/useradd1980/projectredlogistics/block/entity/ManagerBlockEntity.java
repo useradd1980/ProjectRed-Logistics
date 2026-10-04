@@ -9,6 +9,7 @@ import io.github.useradd1980.projectredlogistics.power.PoweredPneumaticDeviceBlo
 import io.github.useradd1980.projectredlogistics.routing.LogisticsRoutingData;
 import io.github.useradd1980.projectredlogistics.routing.ManagerRoutingData;
 import mrtjp.projectred.core.CenterLookup;
+import mrtjp.projectred.core.block.ProjectRedBlock;
 import mrtjp.projectred.core.inventory.BaseContainer;
 import mrtjp.projectred.expansion.graphs.GraphContainer;
 import mrtjp.projectred.expansion.graphs.GraphRoute;
@@ -803,6 +804,19 @@ public class ManagerBlockEntity
         setChanged();
 
         if (getLevel() != null && !getLevel().isClientSide()) {
+            BlockState state = getBlockState();
+
+            if (state.hasProperty(ProjectRedBlock.WORKING)
+                    && state.getValue(ProjectRedBlock.WORKING) != satisfied) {
+
+                getLevel().setBlock(
+                        getBlockPos(),
+                        state.setValue(
+                                ProjectRedBlock.WORKING,
+                                satisfied),
+                        3);
+            }
+
             getLevel().updateNeighborsAt(
                     getBlockPos(),
                     getBlockState().getBlock());
