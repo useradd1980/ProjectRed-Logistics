@@ -209,7 +209,18 @@ public class ManagerScreen
                 CONTROL_SIZE,
                 CONTROL_SIZE);
 
-        drawControlFrame(graphics, x + PRIORITY_X, y + PRIORITY_Y);
+        // The original RP2 Manager baked the priority button frame into
+        // manager.png at this exact position. Copy that 14x14 region rather
+        // than approximating the bevel.
+        graphics.blit(
+                RP2_MANAGER_GUI,
+                x + PRIORITY_X,
+                y + PRIORITY_Y,
+                PRIORITY_X,
+                PRIORITY_Y,
+                CONTROL_SIZE,
+                CONTROL_SIZE);
+
         drawControlFrame(graphics, x + COLOUR_X, y + COLOUR_Y);
 
         String priority = Integer.toString(menu.getPriority());
