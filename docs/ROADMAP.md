@@ -33,9 +33,9 @@ through in-game testing.
 - [x] Add generic opt-in low-load power support for pneumatic tubes.
 - [x] Apply the full patch series to the pinned ProjectRed 1.21.1 source.
 - [x] Build and publish the patched ProjectRed development artifacts locally.
-- [ ] Add an integration graph test proving a longer allowed route beats a
+- [x] Add an integration graph test proving a longer allowed route beats a
       shorter blocked route.
-- [ ] Add explicit regression coverage proving vanilla ProjectRed behaviour is
+- [x] Add explicit regression coverage proving vanilla ProjectRed behaviour is
       unchanged when no extension policies are registered.
 - [ ] Convert the patch series into clean upstream ProjectRed contribution
       branches/commits.
@@ -138,7 +138,26 @@ through in-game testing.
       junctions.
 - [ ] Add automated/regression tests for low-load power topology changes.
 
-## Milestone 7 — Recipes and progression
+## Milestone 7 — Restriction Tube
+
+- [x] Confirm original RP2 semantics: a Restriction Tube contributes a routing
+      weight of 1,000,000 rather than blocking transport.
+- [x] Add generic weighted-routing coverage proving a longer unrestricted route
+      beats a shorter heavily weighted route.
+- [x] Add generic weighted-routing coverage proving a heavily weighted route
+      remains usable when it is the only route.
+- [x] Register a Logistics-owned Restriction Tube multipart and placement item.
+- [x] Mark Restriction Tubes as routing-significant graph nodes.
+- [x] Apply the RP2-style 1,000,000 route cost through the generic route-policy
+      API.
+- [x] Add the original RP2-style shapeless recipe: pneumatic tube + iron ingot.
+- [ ] Add dedicated RP2 Restriction Tube artwork instead of the temporary
+      standard pneumatic-tube appearance.
+- [ ] Validate placement and route preference in-game.
+- [ ] Validate coloured routing, red-alloy wiring, and Electrotine power
+      coexistence on Restriction Tubes.
+
+## Milestone 8 — Recipes and progression
 
 - [x] Add RP2-derived Filter recipe.
 - [x] Add RP2-derived Sorting Machine recipe.
@@ -147,7 +166,7 @@ through in-game testing.
 - [ ] Add the original RP2 Manager recipe once its Regulator dependency exists.
 - [ ] Review the remaining RP2 logistics-machine progression and recipes.
 
-## Milestone 8 — Upstreaming, polish, and release readiness
+## Milestone 9 — Upstreaming, polish, and release readiness
 
 - [x] Refresh the project README to describe the current feature set.
 - [x] Document the full ProjectRed patch workflow.
