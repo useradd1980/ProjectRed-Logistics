@@ -58,7 +58,7 @@ public final class PaintedTubeClientManager {
      * Representative colour sampled from ProjectRed's Electrotine Alloy
      * ingot artwork. Format is RGBA, matching CCL ColourMultiplier.
      */
-    private static final int ELECTROTINE_RGBA = 0x00BDEBFF;
+    private static final int ELECTROTINE_RGBA = 0x0989CFFF;
 
     private PaintedTubeClientManager() { }
 
