@@ -5,6 +5,7 @@ diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src
  
  import java.util.Set;
 +import java.util.function.Predicate;
+ import javax.annotation.Nullable;
  
  public interface IExpansionAPI {
  
