@@ -2,34 +2,32 @@ package io.github.useradd1980.projectredlogistics.client;
 
 import codechicken.lib.render.CCModel;
 import codechicken.lib.render.lighting.LightModel;
-import codechicken.lib.vec.Translation;
-import codechicken.lib.vec.Vector3;
-import mrtjp.projectred.expansion.client.TubeModelBuilder;
+import mrtjp.projectred.transmission.client.FramedWireModelRenderer;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
- * Builds an electrotine conductor strip inside a pneumatic tube.
+ * Builds the Electrotine conductor shown inside an upgraded pneumatic tube.
  *
- * ProjectRed's redstone conductor occupies the positive XYZ corner. The
- * routing-colour strip added by ProjectRed Logistics occupies the negative XYZ
- * corner. Electrotine therefore uses a third, non-overlapping corner:
- * +X / -Y / +Z.
+ * The first version reused the pneumatic tube's redstone-wire OBJ geometry.
+ * That geometry has UVs for the tube texture, not for ProjectRed
+ * Transmission's low_load_power_wire.png. Applying the Low Load Power Line
+ * texture to those UVs sampled transparent/edge regions and produced the
+ * broken, edge-on-looking line.
+ *
+ * This version starts with ProjectRed's actual framed Low Load Power Line wire
+ * model, preserving its native UV layout exactly, then remaps only the vertex
+ * positions into one corner of the pneumatic tube. The stripe artwork is
+ * therefore sampled lengthwise exactly as it is on a real Low Load Power Line.
  */
 public final class ElectrotineTubeInnerModelRenderer {
-
-    private static final Map<String, CCModel> SOURCE_MODELS =
-            TubeModelBuilder.loadModels(
-                    "tube",
-                    (name, model) ->
-                            model.apply(new Translation(Vector3.CENTER)));
 
     private static final Map<Integer, CCModel> MODEL_CACHE =
             new HashMap<>();
 
+    // Keep the electrotine conductor in its own corner:
+    // +X / -Y / +Z.
     private static final double NEG_MIN = 0.3125D;
     private static final double NEG_MAX = 0.3750D;
     private static final double POS_MIN = 0.6250D;
@@ -45,129 +43,112 @@ public final class ElectrotineTubeInnerModelRenderer {
     }
 
     private static CCModel buildModel(int connMap) {
-        int connCount = TubeModelBuilder.countConnections(connMap);
-        int axisCount = TubeModelBuilder.countAxis(connMap);
+        /*
+         * Thickness zero is ProjectRed's thinnest framed-wire geometry.
+         * Its UVs are authored specifically for the same
+         * low_load_power_wire.png texture that we render on the tube.
+         *
+         * FramedWireModelRenderer's key packs thickness above bit 5, so for
+         * thickness zero the model key is simply the six-bit connection map.
+         */
+        CCModel model =
+                FramedWireModelRenderer
+                        .getOrGenerateWireModel(connMap & 0x3F)
+                        .copy();
 
-        if (connCount == 2 && axisCount == 1) {
-            int axis = (connMap & 0x3) != 0
-                    ? 0
-                    : (connMap & 0xC) != 0 ? 1 : 2;
+        Bounds bounds = Bounds.of(model);
 
-            return switch (axis) {
-                // Y axis: X/Z are cross-section coordinates.
-                case 0 -> remap(
-                        SOURCE_MODELS.get("wire_a0"),
-                        POS_MIN, 0.0D, POS_MIN,
-                        POS_MAX, 1.0D, POS_MAX);
+        remapAxis(
+                model,
+                Axis.X,
+                bounds.minX,
+                bounds.maxX,
+                targetRange(
+                        (connMap & (1 << 4)) != 0,
+                        (connMap & (1 << 5)) != 0,
+                        POS_MIN,
+                        POS_MAX));
 
-                // Z axis: X/Y are cross-section coordinates.
-                case 1 -> remap(
-                        SOURCE_MODELS.get("wire_a1"),
-                        POS_MIN, NEG_MIN, 0.0D,
-                        POS_MAX, NEG_MAX, 1.0D);
+        remapAxis(
+                model,
+                Axis.Y,
+                bounds.minY,
+                bounds.maxY,
+                targetRange(
+                        (connMap & (1 << 0)) != 0,
+                        (connMap & (1 << 1)) != 0,
+                        NEG_MIN,
+                        NEG_MAX));
 
-                // X axis: Y/Z are cross-section coordinates.
-                default -> remap(
-                        SOURCE_MODELS.get("wire_a2"),
-                        0.0D, NEG_MIN, POS_MIN,
-                        1.0D, NEG_MAX, POS_MAX);
-            };
-        }
-
-        List<CCModel> pieces = new LinkedList<>();
-
-        pieces.add(remap(
-                SOURCE_MODELS.get("wire_center"),
-                POS_MIN, NEG_MIN, POS_MIN,
-                POS_MAX, NEG_MAX, POS_MAX));
-
-        for (int side = 0; side < 6; side++) {
-            if ((connMap & (1 << side)) == 0) continue;
-
-            pieces.add(switch (side) {
-                case 0 -> remap(
-                        SOURCE_MODELS.get("wire_s0"),
-                        POS_MIN, 0.0D, POS_MIN,
-                        POS_MAX, NEG_MIN, POS_MAX);
-                case 1 -> remap(
-                        SOURCE_MODELS.get("wire_s1"),
-                        POS_MIN, NEG_MAX, POS_MIN,
-                        POS_MAX, 1.0D, POS_MAX);
-                case 2 -> remap(
-                        SOURCE_MODELS.get("wire_s2"),
-                        POS_MIN, NEG_MIN, 0.0D,
-                        POS_MAX, NEG_MAX, POS_MIN);
-                case 3 -> remap(
-                        SOURCE_MODELS.get("wire_s3"),
-                        POS_MIN, NEG_MIN, POS_MAX,
-                        POS_MAX, NEG_MAX, 1.0D);
-                case 4 -> remap(
-                        SOURCE_MODELS.get("wire_s4"),
-                        0.0D, NEG_MIN, POS_MIN,
-                        POS_MIN, NEG_MAX, POS_MAX);
-                default -> remap(
-                        SOURCE_MODELS.get("wire_s5"),
-                        POS_MAX, NEG_MIN, POS_MIN,
-                        1.0D, NEG_MAX, POS_MAX);
-            });
-        }
-
-        return CCModel.combine(pieces);
-    }
-
-    private static CCModel remap(
-            CCModel source,
-            double targetMinX,
-            double targetMinY,
-            double targetMinZ,
-            double targetMaxX,
-            double targetMaxY,
-            double targetMaxZ) {
-
-        if (source == null) {
-            throw new IllegalStateException(
-                    "Missing ProjectRed wire OBJ group");
-        }
-
-        CCModel model = source.copy();
-
-        double sourceMinX = Double.POSITIVE_INFINITY;
-        double sourceMinY = Double.POSITIVE_INFINITY;
-        double sourceMinZ = Double.POSITIVE_INFINITY;
-        double sourceMaxX = Double.NEGATIVE_INFINITY;
-        double sourceMaxY = Double.NEGATIVE_INFINITY;
-        double sourceMaxZ = Double.NEGATIVE_INFINITY;
-
-        for (var vertex : model.getVertices()) {
-            sourceMinX = Math.min(sourceMinX, vertex.vec.x);
-            sourceMinY = Math.min(sourceMinY, vertex.vec.y);
-            sourceMinZ = Math.min(sourceMinZ, vertex.vec.z);
-            sourceMaxX = Math.max(sourceMaxX, vertex.vec.x);
-            sourceMaxY = Math.max(sourceMaxY, vertex.vec.y);
-            sourceMaxZ = Math.max(sourceMaxZ, vertex.vec.z);
-        }
-
-        for (var vertex : model.getVertices()) {
-            vertex.vec.x = remapCoordinate(
-                    vertex.vec.x,
-                    sourceMinX, sourceMaxX,
-                    targetMinX, targetMaxX);
-
-            vertex.vec.y = remapCoordinate(
-                    vertex.vec.y,
-                    sourceMinY, sourceMaxY,
-                    targetMinY, targetMaxY);
-
-            vertex.vec.z = remapCoordinate(
-                    vertex.vec.z,
-                    sourceMinZ, sourceMaxZ,
-                    targetMinZ, targetMaxZ);
-        }
+        remapAxis(
+                model,
+                Axis.Z,
+                bounds.minZ,
+                bounds.maxZ,
+                targetRange(
+                        (connMap & (1 << 2)) != 0,
+                        (connMap & (1 << 3)) != 0,
+                        POS_MIN,
+                        POS_MAX));
 
         model.computeNormals();
         model.computeLighting(LightModel.standardLightModel);
-
         return model;
+    }
+
+    /**
+     * Maps one model axis while keeping the conductor centred on the chosen
+     * tube corner. A connected end still reaches the corresponding block face;
+     * an unconnected axis is collapsed down to the conductor's cross-section.
+     */
+    private static Range targetRange(
+            boolean negativeConnection,
+            boolean positiveConnection,
+            double crossMin,
+            double crossMax) {
+
+        if (negativeConnection && positiveConnection) {
+            return new Range(0.0D, 1.0D);
+        }
+
+        if (negativeConnection) {
+            return new Range(0.0D, crossMax);
+        }
+
+        if (positiveConnection) {
+            return new Range(crossMin, 1.0D);
+        }
+
+        return new Range(crossMin, crossMax);
+    }
+
+    private static void remapAxis(
+            CCModel model,
+            Axis axis,
+            double sourceMin,
+            double sourceMax,
+            Range target) {
+
+        for (var vertex : model.getVertices()) {
+            double value = switch (axis) {
+                case X -> vertex.vec.x;
+                case Y -> vertex.vec.y;
+                case Z -> vertex.vec.z;
+            };
+
+            double remapped = remapCoordinate(
+                    value,
+                    sourceMin,
+                    sourceMax,
+                    target.min,
+                    target.max);
+
+            switch (axis) {
+                case X -> vertex.vec.x = remapped;
+                case Y -> vertex.vec.y = remapped;
+                case Z -> vertex.vec.z = remapped;
+            }
+        }
     }
 
     private static double remapCoordinate(
@@ -178,9 +159,54 @@ public final class ElectrotineTubeInnerModelRenderer {
             double targetMax) {
 
         double sourceSpan = sourceMax - sourceMin;
-        if (sourceSpan == 0.0D) return targetMin;
+        if (sourceSpan == 0.0D) {
+            return (targetMin + targetMax) * 0.5D;
+        }
 
         double t = (value - sourceMin) / sourceSpan;
         return targetMin + t * (targetMax - targetMin);
+    }
+
+    private enum Axis {
+        X,
+        Y,
+        Z
+    }
+
+    private record Range(double min, double max) { }
+
+    private record Bounds(
+            double minX,
+            double minY,
+            double minZ,
+            double maxX,
+            double maxY,
+            double maxZ) {
+
+        private static Bounds of(CCModel model) {
+            double minX = Double.POSITIVE_INFINITY;
+            double minY = Double.POSITIVE_INFINITY;
+            double minZ = Double.POSITIVE_INFINITY;
+            double maxX = Double.NEGATIVE_INFINITY;
+            double maxY = Double.NEGATIVE_INFINITY;
+            double maxZ = Double.NEGATIVE_INFINITY;
+
+            for (var vertex : model.getVertices()) {
+                minX = Math.min(minX, vertex.vec.x);
+                minY = Math.min(minY, vertex.vec.y);
+                minZ = Math.min(minZ, vertex.vec.z);
+                maxX = Math.max(maxX, vertex.vec.x);
+                maxY = Math.max(maxY, vertex.vec.y);
+                maxZ = Math.max(maxZ, vertex.vec.z);
+            }
+
+            return new Bounds(
+                    minX,
+                    minY,
+                    minZ,
+                    maxX,
+                    maxY,
+                    maxZ);
+        }
     }
 }

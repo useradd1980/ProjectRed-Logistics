@@ -64,10 +64,6 @@ public final class TubePaintInteractionHandler {
             if (TubePowerData.isPowered(tube)) return;
 
             TubePowerData.setPowered(tube);
-            player.displayClientMessage(
-                    Component.literal(
-                            "Electrotine conductor added to tube"),
-                    false);
 
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
