@@ -5,7 +5,6 @@ import mrtjp.projectred.api.ProjectRedAPI;
 import mrtjp.projectred.api.pneumatics.PneumaticPayload;
 import mrtjp.projectred.api.pneumatics.PneumaticRouteContext;
 import mrtjp.projectred.api.pneumatics.PneumaticRouteDecision;
-import mrtjp.projectred.api.pneumatics.PneumaticRouteNodeContext;
 import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
 import mrtjp.projectred.api.pneumatics.PneumaticTube;
 
@@ -33,11 +32,6 @@ public final class RestrictionTubeRoutePolicy implements PneumaticRoutePolicy {
         return getTube(context.level(), context.toPos()) instanceof RestrictionTubePart
                 ? PneumaticRouteDecision.cost(RESTRICTION_COST)
                 : PneumaticRouteDecision.PASS;
-    }
-
-    @Override
-    public boolean requiresRoutingNode(PneumaticRouteNodeContext context) {
-        return getTube(context.level(), context.pos()) instanceof RestrictionTubePart;
     }
 
     private static PneumaticTube getTube(
