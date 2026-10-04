@@ -61,7 +61,6 @@ dependencies {
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
         compileOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
-        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:transmission"
 
         // Tests compile against the public pneumatic payload API, but the API
         // must not be added again at test runtime: NeoForge's tested-mod
@@ -85,7 +84,6 @@ dependencies {
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
-        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:transmission"
         testCompileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
         runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"

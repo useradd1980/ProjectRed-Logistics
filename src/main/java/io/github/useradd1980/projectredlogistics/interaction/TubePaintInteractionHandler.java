@@ -136,10 +136,6 @@ public final class TubePaintInteractionHandler {
                             player);
                 }
 
-                player.displayClientMessage(
-                        Component.literal(
-                                "Electrotine conductor removed"),
-                        false);
             }
         }
     }
