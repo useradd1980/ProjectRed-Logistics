@@ -27,8 +27,8 @@ other addons to use.
   instead of blocking transport.
 - Items prefer ordinary pneumatic routes whenever one is available, but can
   still use Restriction Tubes as a fallback.
-- Uses the normal ProjectRed pneumatic-tube geometry with a warm
-  nickel/pewter outer frame so it fits the modern ProjectRed visual style.
+- Uses the normal ProjectRed pneumatic-tube geometry with a dark
+  graphite/blackened-steel outer frame so it fits the modern ProjectRed visual style.
 - Supports the same routing-colour, red-alloy, and Electrotine tube upgrades
   as ordinary pneumatic tubes.
 
