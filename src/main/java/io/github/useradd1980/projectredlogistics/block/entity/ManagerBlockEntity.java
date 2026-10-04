@@ -62,6 +62,7 @@ public class ManagerBlockEntity
     private static final String TAG_REQUEST_CURSOR = "request_cursor";
     private static final String TAG_REQUEST_IN_FLIGHT = "request_in_flight";
     private static final String TAG_REQUEST_TIMEOUT = "request_timeout";
+    private static final String TAG_STOCK_SATISFIED = "stock_satisfied";
 
     private static final int REQUEST_TIMEOUT_TICKS = 600;
 
@@ -75,6 +76,7 @@ public class ManagerBlockEntity
     private int requestCooldown = 0;
     private boolean requestInFlight = false;
     private int requestTimeout = 0;
+    private boolean stockSatisfied = false;
 
     public ManagerBlockEntity(BlockPos pos, BlockState state) {
         super(LogisticsContent.MANAGER_BLOCK_ENTITY.get(), pos, state);
@@ -95,6 +97,7 @@ public class ManagerBlockEntity
         tag.putInt(TAG_REQUEST_CURSOR, requestCursor);
         tag.putBoolean(TAG_REQUEST_IN_FLIGHT, requestInFlight);
         tag.putInt(TAG_REQUEST_TIMEOUT, requestTimeout);
+        tag.putBoolean(TAG_STOCK_SATISFIED, stockSatisfied);
     }
 
     @Override
@@ -118,6 +121,7 @@ public class ManagerBlockEntity
         if (requestTimeout == 0) {
             requestInFlight = false;
         }
+        stockSatisfied = tag.getBoolean(TAG_STOCK_SATISFIED);
     }
     //endregion
 
@@ -157,17 +161,32 @@ public class ManagerBlockEntity
         }
 
         if (getLevel().getGameTime() % 10 != 0) return;
-        if (!canConductorWork()) return;
-        if (!itemQueue.isEmpty()) return;
 
         RearInventory rear = getRearInventory();
-        if (rear == null) return;
+        if (rear == null) {
+            setStockSatisfied(false);
+            return;
+        }
+
+        /*
+         * RP2's Manager asserted its Powered/redstone output when Stock mode
+         * had fully satisfied the configured inventory. Keep that status
+         * independent of whether a request payload happens to be in flight so
+         * neighboring redstone sees a stable state.
+         */
+        setStockSatisfied(
+                mode == MODE_STOCK
+                        && isStockExactlySatisfied(rear));
+
+        if (!canConductorWork()) return;
+        if (!itemQueue.isEmpty()) return;
 
         if (exportOneSurplus(rear)) return;
 
         if (mode == MODE_STOCK
                 && requestCooldown == 0
-                && !requestInFlight) {
+                && !requestInFlight
+                && !stockSatisfied) {
             requestOneMissingStack(rear);
         }
     }
@@ -414,6 +433,36 @@ public class ManagerBlockEntity
             }
         }
         return count;
+    }
+
+    private boolean isStockExactlySatisfied(RearInventory rear) {
+        boolean hasTemplate = false;
+
+        for (int slot = 0; slot < TEMPLATE_SIZE; slot++) {
+            ItemStack template = templateInventory.getItem(slot);
+            if (template.isEmpty()) continue;
+
+            hasTemplate = true;
+
+            if (countInRear(rear, template) != targetCount(template)) {
+                return false;
+            }
+        }
+
+        if (!hasTemplate) {
+            return false;
+        }
+
+        // Unlisted items are surplus in Stock mode, so the inventory is not
+        // considered settled until the Manager has removed them.
+        for (int slot = 0; slot < rear.size(); slot++) {
+            ItemStack stack = rear.getStack(slot);
+            if (!stack.isEmpty() && !hasTemplate(stack)) {
+                return false;
+            }
+        }
+
+        return true;
     }
     //endregion
 
@@ -743,11 +792,33 @@ public class ManagerBlockEntity
         return priority;
     }
 
+    public boolean isStockSatisfied() {
+        return stockSatisfied;
+    }
+
+    private void setStockSatisfied(boolean satisfied) {
+        if (stockSatisfied == satisfied) return;
+
+        stockSatisfied = satisfied;
+        setChanged();
+
+        if (getLevel() != null && !getLevel().isClientSide()) {
+            getLevel().updateNeighborsAt(
+                    getBlockPos(),
+                    getBlockState().getBlock());
+        }
+    }
+
     public void cycleMode(boolean forward) {
         mode = cycle(mode, MODE_STOCK, MODE_EXCESS, forward);
         requestInFlight = false;
         requestTimeout = 0;
-        setChanged();
+
+        if (mode != MODE_STOCK) {
+            setStockSatisfied(false);
+        } else {
+            setChanged();
+        }
     }
 
     public void cycleRouteColour(boolean forward) {
