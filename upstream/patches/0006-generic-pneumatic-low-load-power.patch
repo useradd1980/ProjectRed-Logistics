@@ -1,0 +1,237 @@
+diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+--- a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
++++ b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+@@ -12,6 +12,7 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
+ 
+ import java.util.Set;
++import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ 
+ public interface IExpansionAPI {
+ 
+@@ -58,6 +59,15 @@ public interface IExpansionAPI {
+      */
+     void registerPneumaticTubeConnectionPolicy(PneumaticTubeConnectionPolicy policy);
+ 
++    /**
++     * Registers a predicate that marks pneumatic tubes as low-load power
++     * conductors. ProjectRed owns the electrical simulation; addons own the
++     * metadata or other state that decides whether a tube is enabled.
++     *
++     * @param predicate power-enablement predicate
++     */
++    void registerPneumaticLowLoadPowerPredicate(Predicate<PneumaticTube> predicate);
++
+     /**
+      * Returns the pneumatic tube occupying the center multipart slot at the
+      * supplied position, or null when no pneumatic tube is present.
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.Block;
+ 
+ import java.util.HashSet;
+ import java.util.Set;
++import java.util.function.Predicate;
+ 
+ public class ExpansionAPI implements IExpansionAPI {
+ 
+@@ -30,6 +31,11 @@ public void registerPneumaticTubeConnectionPolicy(PneumaticTubeConnectionPolicy
+         PneumaticTubeConnectionRegistry.register(policy);
+     }
+ 
++    @Override
++    public void registerPneumaticLowLoadPowerPredicate(Predicate<PneumaticTube> predicate) {
++        PneumaticTubePowerRegistry.register(predicate);
++    }
++
+     @Override
+     public PneumaticTube getPneumaticTube(Level level, BlockPos pos) {
+         var tile = level.getBlockEntity(pos);
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubePowerRegistry.java b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubePowerRegistry.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubePowerRegistry.java
+@@ -0,0 +1,32 @@
++package mrtjp.projectred.expansion;
++
++import mrtjp.projectred.api.pneumatics.PneumaticTube;
++
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.function.Predicate;
++
++/**
++ * Generic opt-in registry for low-load power conduction through pneumatic
++ * tubes. The registry deliberately knows nothing about electrotine or addon
++ * metadata; those semantics remain in the registering addon.
++ */
++public final class PneumaticTubePowerRegistry {
++
++    private static final List<Predicate<PneumaticTube>> PREDICATES =
++            new CopyOnWriteArrayList<>();
++
++    private PneumaticTubePowerRegistry() { }
++
++    public static void register(Predicate<PneumaticTube> predicate) {
++        PREDICATES.add(Objects.requireNonNull(predicate, "predicate"));
++    }
++
++    public static boolean isLowLoadPowerEnabled(PneumaticTube tube) {
++        for (var predicate : PREDICATES) {
++            if (predicate.test(tube)) return true;
++        }
++        return false;
++    }
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+@@ -12,7 +12,13 @@ import mrtjp.projectred.api.pneumatics.PneumaticTube;
+ import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
+ import mrtjp.projectred.core.CenterLookup;
++import mrtjp.projectred.core.power.ILowLoadMachine;
++import mrtjp.projectred.core.power.ILowLoadPowerLine;
++import mrtjp.projectred.core.power.IPowerConnectable;
++import mrtjp.projectred.core.power.IPowerConductorSource;
++import mrtjp.projectred.core.power.PowerConductor;
+ import mrtjp.projectred.expansion.PneumaticRouteRegistry;
+ import mrtjp.projectred.expansion.PneumaticTubeConnectionRegistry;
++import mrtjp.projectred.expansion.PneumaticTubePowerRegistry;
+ import mrtjp.projectred.expansion.TubeType;
+ import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
+ import mrtjp.projectred.expansion.graphs.ClientSideLinkCache;
+@@ -31,4 +37,5 @@ import net.neoforged.neoforge.capabilities.Capabilities;
+ 
++import java.util.ArrayList;
+ import java.util.Collection;
+ import java.util.Collections;
+ import java.util.List;
+@@ -41,6 +48,7 @@ import static mrtjp.projectred.core.client.particle.ParticleAction.*;
+ import static mrtjp.projectred.expansion.ProjectRedExpansion.LOGGER;
+ 
+-public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer, TickablePart, PneumaticTube {
++public class PneumaticTubePart extends GraphContainerTubePart implements PneumaticTransportContainer, GraphContainer,
++        TickablePart, PneumaticTube, ILowLoadPowerLine, IPowerConnectable, IPowerConductorSource {
+ 
+     private static final int KEY_NEW_PAYLOAD = 0x10;
+     private static final int KEY_PAYLOAD_UPDATE = 0x11;
+@@ -55,6 +64,7 @@ public class PneumaticTubePart extends GraphContainerTubePart implements Pneumati
+     public final ClientSideLinkCache linkCache = new ClientSideLinkCache();
+     private final PneumaticTransport transport = new PneumaticTransport(this);
+     private final PneumaticTubeData customData = new PneumaticTubeData();
++    private final PowerConductor lowLoadConductor = new PowerConductor(this, 0.01, 16);
+ 
+     private int lastRoundRobinDir = -1;
+ 
+@@ -70,6 +80,56 @@ public PneumaticTransport getPneumaticTransport() {
+         return transport;
+     }
+ 
++    //region Optional low-load power conductor
++    private boolean isLowLoadPowerEnabled() {
++        return PneumaticTubePowerRegistry.isLowLoadPowerEnabled(this);
++    }
++
++    @Override
++    public long getTime() {
++        return level().getGameTime();
++    }
++
++    @Override
++    public PowerConductor getConductor(int dir) {
++        return lowLoadConductor;
++    }
++
++    @Override
++    public List<PowerConductor> getConnectedConductors() {
++        if (!isLowLoadPowerEnabled()) {
++            return Collections.emptyList();
++        }
++
++        List<PowerConductor> conductors = new ArrayList<>();
++
++        for (int s = 0; s < 6; s++) {
++            CenterLookup lookup;
++
++            if (maskConnectsIn(s)) {
++                lookup = CenterLookup.lookupInsideFace(level(), pos(), s);
++            } else if (maskConnectsOut(s)) {
++                lookup = CenterLookup.lookupStraightCenter(level(), pos(), s);
++            } else {
++                continue;
++            }
++
++            if (lookup.part instanceof PneumaticTubePart otherTube
++                    && !otherTube.isLowLoadPowerEnabled()) {
++                continue;
++            }
++
++            if (lookup.part instanceof IPowerConnectable powerPart) {
++                conductors.add(powerPart.getConductor(lookup.otherDirection));
++            } else if (lookup.tile instanceof IPowerConnectable powerTile) {
++                conductors.add(powerTile.getConductor(lookup.otherDirection));
++            }
++        }
++
++        return conductors;
++    }
++    //endregion
++
+     //region Save/load
+     @Override
+     public void save(CompoundTag tag, HolderLookup.Provider lookupProvider) {
+@@ -192,7 +247,7 @@ private void onTubeDataChanged() {
+         if (level().isClientSide) return;
+ 
+         tile().setChanged();
+-        updateOutside();
++        updateInsideAndOutside();
+ 
+         // Connection policy may depend on metadata. Neighbouring multipart
+         // tubes must also rebuild their masks when this tube's metadata changes.
+@@ -273,5 +328,9 @@ public void tick() {
+         super.tick();
+         transport.tick();
++
++        if (!level().isClientSide && isLowLoadPowerEnabled()) {
++            lowLoadConductor.tick();
++        }
+     }
+     //endregion
+ 
+@@ -287,6 +346,12 @@ public boolean canConnectPart(IConnectable part, int s) {
+             return false;
+         }
+ 
++        if (isLowLoadPowerEnabled()
++                && (part instanceof ILowLoadPowerLine
++                || part instanceof ILowLoadMachine)) {
++            return true;
++        }
++
+         if (part instanceof PneumaticTransportContainer) return true;
+ 
+         return super.canConnectPart(part, s);
+@@ -295,5 +359,20 @@ public boolean canConnectPart(IConnectable part, int s) {
+     @Override
+     public boolean discoverStraightOverride(int s) {
++        if (isLowLoadPowerEnabled()) {
++            CenterLookup lookup =
++                    CenterLookup.lookupStraightCenter(level(), pos(), s);
++
++            if (lookup.tile instanceof IConnectable connectable
++                    && (lookup.tile instanceof ILowLoadPowerLine
++                    || lookup.tile instanceof ILowLoadMachine)
++                    && connectable.connectStraight(
++                            this,
++                            lookup.otherDirection,
++                            -1)) {
++                return true;
++            }
++        }
++
+         return hasEndpointOnSide(s);
+     }
+ 

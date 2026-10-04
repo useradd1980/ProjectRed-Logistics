@@ -1,0 +1,250 @@
+package io.github.useradd1980.projectredlogistics.client.screen;
+
+import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
+import mrtjp.projectred.lib.Point;
+import mrtjp.projectred.redui.RedUIContainerScreen;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+
+/**
+ * RP2-inspired Filter GUI.
+ *
+ * Slot and colour-control positions intentionally match the original
+ * RedPower 2 pr6 Filter layout recovered from the user's archive:
+ * filter grid at (62,17), player inventory at (8,84), hotbar at y=142,
+ * and the colour selector at (118,55)..(129,66).
+ *
+ * The old RP2 texture itself is not redistributed; Minecraft's dispenser
+ * background provides the compatible 3x3 layout and the extra Filter
+ * controls are drawn by this screen.
+ */
+public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
+
+    private static final ResourceLocation BACKGROUND =
+            ResourceLocation.fromNamespaceAndPath(
+                    "minecraft",
+                    "textures/gui/container/dispenser.png");
+
+    private static final ResourceLocation ICONS =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/sorting_machine_icons.png");
+
+    private static final ResourceLocation RP2_FILTER_GUI =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/rp2_filter9.png");
+
+    private static final int COLOUR_X = 118;
+    private static final int COLOUR_Y = 55;
+    private static final int COLOUR_SIZE = 12;
+
+    private static final int AUTOMATIC_X = 139;
+    private static final int AUTOMATIC_Y = 54;
+    private static final int AUTOMATIC_SIZE = 14;
+    private static final int AUTOMATIC_ICON_U = 14;
+    private static final int AUTOMATIC_ICON_V = 14;
+
+    // RP2's original display palette, in modern DyeColor ID order:
+    // white, orange, magenta, light blue, yellow, lime, pink, gray,
+    // light gray, cyan, purple, blue, brown, green, red, black.
+    private static final int[] PAINT_COLOURS = {
+            0xFFFFFF, 0xFF8000, 0xFF00FF, 0x6C80FF,
+            0xFFFF00, 0x00FF00, 0xFF6480, 0x535353,
+            0x939393, 0x00FFFF, 0x8000FF, 0x0000FF,
+            0x4F2700, 0x008000, 0xFF0000, 0x1F1F1F
+    };
+
+    public FilterScreen(
+            FilterMenu menu,
+            Inventory playerInventory,
+            Component title) {
+
+        super(176, 166, menu, playerInventory, title);
+
+        // Match RP2's text placement.
+        titleLabelX = 60;
+        titleLabelY = 6;
+        inventoryLabelX = 8;
+        inventoryLabelY = 72;
+    }
+
+    @Override
+    public void drawBack(
+            GuiGraphics graphics,
+            Point mouse,
+            float partialFrame) {
+
+        int x = getFrame().x();
+        int y = getFrame().y();
+
+        graphics.blit(
+                BACKGROUND,
+                x,
+                y,
+                0,
+                0,
+                getFrame().width(),
+                getFrame().height());
+
+        drawFlowArrows(graphics, x, y);
+        drawColourSelector(graphics, x, y);
+        drawAutomaticButton(graphics, x, y);
+    }
+
+    private void drawFlowArrows(GuiGraphics graphics, int x, int y) {
+        // Simple RP2-style left-to-right flow arrows around the 3x3 grid.
+        final int colour = 0xFF8A8A8A;
+
+        // Input arrow.
+        graphics.fill(x + 31, y + 41, x + 50, y + 44, colour);
+        graphics.fill(x + 46, y + 37, x + 50, y + 48, colour);
+        graphics.fill(x + 50, y + 40, x + 54, y + 45, colour);
+
+        // Output arrow.
+        graphics.fill(x + 122, y + 41, x + 141, y + 44, colour);
+        graphics.fill(x + 137, y + 37, x + 141, y + 48, colour);
+        graphics.fill(x + 141, y + 40, x + 145, y + 45, colour);
+    }
+
+    private void drawColourSelector(GuiGraphics graphics, int x, int y) {
+        int sx = x + COLOUR_X;
+        int sy = y + COLOUR_Y;
+
+        // Exact 12x12 routing-colour button from RP2 filter9.png.
+        graphics.blit(
+                RP2_FILTER_GUI,
+                sx,
+                sy,
+                118,
+                55,
+                COLOUR_SIZE,
+                COLOUR_SIZE);
+
+        int colourId = menu.getRouteColour();
+        if (colourId >= 0 && colourId < PAINT_COLOURS.length) {
+            graphics.fill(
+                    sx + 4,
+                    sy + 4,
+                    sx + 8,
+                    sy + 8,
+                    0xFF000000 | PAINT_COLOURS[colourId]);
+        } else {
+            // RP2's original uncoloured 4x4 swatch.
+            graphics.blit(
+                    RP2_FILTER_GUI,
+                    sx + 4,
+                    sy + 4,
+                    176,
+                    0,
+                    4,
+                    4);
+        }
+    }
+
+    private void drawAutomaticButton(
+            GuiGraphics graphics,
+            int x,
+            int y) {
+
+        int bx = x + AUTOMATIC_X;
+        int by = y + AUTOMATIC_Y;
+
+        // Use the same Automatic pull-mode icon as the Sorting Machine.
+        graphics.blit(
+                ICONS,
+                bx,
+                by,
+                AUTOMATIC_ICON_U,
+                AUTOMATIC_ICON_V,
+                AUTOMATIC_SIZE,
+                AUTOMATIC_SIZE);
+
+        // A thin recessed outline indicates that automatic pulsing is enabled.
+        if (menu.isAutomatic()) {
+            graphics.fill(bx - 1, by - 1, bx + AUTOMATIC_SIZE + 1, by, 0xFF373737);
+            graphics.fill(bx - 1, by - 1, bx, by + AUTOMATIC_SIZE + 1, 0xFF373737);
+            graphics.fill(bx, by + AUTOMATIC_SIZE, bx + AUTOMATIC_SIZE + 1, by + AUTOMATIC_SIZE + 1, 0xFFFFFFFF);
+            graphics.fill(bx + AUTOMATIC_SIZE, by, bx + AUTOMATIC_SIZE + 1, by + AUTOMATIC_SIZE + 1, 0xFFFFFFFF);
+        }
+    }
+
+    @Override
+    public void render(
+            GuiGraphics graphics,
+            int mouseX,
+            int mouseY,
+            float partialTick) {
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        int relativeX = mouseX - getFrame().x();
+        int relativeY = mouseY - getFrame().y();
+
+        if (relativeX >= AUTOMATIC_X
+                && relativeX < AUTOMATIC_X + AUTOMATIC_SIZE
+                && relativeY >= AUTOMATIC_Y
+                && relativeY < AUTOMATIC_Y + AUTOMATIC_SIZE) {
+
+            graphics.renderTooltip(
+                    font,
+                    Component.literal(
+                            menu.isAutomatic()
+                                    ? "Automatic: On"
+                                    : "Automatic: Off"),
+                    mouseX,
+                    mouseY);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(
+            double mouseX,
+            double mouseY,
+            int mouseButton) {
+
+        int relativeX = (int) mouseX - getFrame().x();
+        int relativeY = (int) mouseY - getFrame().y();
+
+        if (relativeX >= COLOUR_X
+                && relativeX < COLOUR_X + COLOUR_SIZE
+                && relativeY >= COLOUR_Y
+                && relativeY < COLOUR_Y + COLOUR_SIZE) {
+
+            int buttonId = mouseButton == 0
+                    ? FilterMenu.BUTTON_COLOUR_NEXT
+                    : FilterMenu.BUTTON_COLOUR_PREVIOUS;
+
+            return sendButton(buttonId);
+        }
+
+        if (relativeX >= AUTOMATIC_X
+                && relativeX < AUTOMATIC_X + AUTOMATIC_SIZE
+                && relativeY >= AUTOMATIC_Y
+                && relativeY < AUTOMATIC_Y + AUTOMATIC_SIZE) {
+
+            return sendButton(FilterMenu.BUTTON_AUTOMATIC_TOGGLE);
+        }
+
+        return super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    private boolean sendButton(int buttonId) {
+        if (minecraft == null
+                || minecraft.player == null
+                || minecraft.gameMode == null) {
+            return false;
+        }
+
+        if (!menu.clickMenuButton(minecraft.player, buttonId)) {
+            return false;
+        }
+
+        minecraft.gameMode.handleInventoryButtonClick(
+                menu.containerId,
+                buttonId);
+        return true;
+    }
+}

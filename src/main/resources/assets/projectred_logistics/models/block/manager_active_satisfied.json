@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "projectred_logistics:block/manager_back",
+    "side": "projectred_logistics:block/manager_side_active_satisfied",
+    "top": "projectred_logistics:block/manager_front"
+  }
+}

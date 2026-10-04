@@ -1,0 +1,426 @@
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinder.java
+@@ -0,0 +1,197 @@
++package mrtjp.projectred.expansion.pneumatics;
++
++import mrtjp.projectred.api.pneumatics.PneumaticRouteContext;
++import mrtjp.projectred.api.pneumatics.PneumaticRouteDecision;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePhase;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.expansion.graphs.GraphContainer;
++import mrtjp.projectred.expansion.part.PneumaticTubePayload;
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Direction;
++import net.minecraft.world.level.Level;
++
++import java.util.Arrays;
++import java.util.IdentityHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Objects;
++import java.util.PriorityQueue;
++import java.util.Comparator;
++
++/**
++ * Payload-aware Dijkstra search over individual tube connections. The normal
++ * global route cache stays untouched and remains the fast path when no addon
++ * policies have been registered.
++ *
++ * Identity of a state includes its initial output and arrival side: these are
++ * significant when returning an output-direction mask to the calling junction.
++ */
++public final class PolicyAwarePneumaticPathfinder {
++
++    private static final int ALL_SIDES = 0x3F;
++    private static final int NONE = -1;
++
++    private final GraphContainer start;
++    private final PneumaticTransportContainer startTransport;
++    private final Level level;
++    private final BlockPos startPos;
++    private final PneumaticTubePayload payload;
++    private final PneumaticRoutePolicy evaluator;
++
++    public PolicyAwarePneumaticPathfinder(GraphContainer start,
++                                         PneumaticTransportContainer startTransport,
++                                         Level level,
++                                         BlockPos startPos,
++                                         PneumaticTubePayload payload) {
++        this(start, startTransport, level, startPos, payload, PneumaticRouteRegistry::evaluate);
++    }
++
++    /** Alternate evaluator is useful for deterministic tests and simulations. */
++    PolicyAwarePneumaticPathfinder(GraphContainer start,
++                                  PneumaticTransportContainer startTransport,
++                                  Level level,
++                                  BlockPos startPos,
++                                  PneumaticTubePayload payload,
++                                  PneumaticRoutePolicy evaluator) {
++        this.start = Objects.requireNonNull(start);
++        this.startTransport = Objects.requireNonNull(startTransport);
++        this.level = Objects.requireNonNull(level);
++        this.startPos = Objects.requireNonNull(startPos);
++        this.payload = Objects.requireNonNull(payload);
++        this.evaluator = Objects.requireNonNull(evaluator);
++    }
++
++    /**
++     * Preserve ProjectRed's transport-mode ordering: use the first mode which
++     * can find any accepting exit, then select the least-cost first hop(s).
++     */
++    public int findExitMask(int firstHopMask, List<PneumaticTransportMode> modes) {
++        for (PneumaticTransportMode mode : modes) {
++            int routes = searchMode(firstHopMask & ALL_SIDES, mode);
++            if (routes != 0) return routes;
++        }
++        return 0;
++    }
++
++    /** Safe fallback for a network without an accepting destination yet. */
++    public int immediateAllowedMask(int requestedMask) {
++        int mask = 0;
++        for (int side = 0; side < 6; side++) {
++            if ((requestedMask & (1 << side)) == 0 || !start.canPropagate(side)) continue;
++
++            GraphContainer next = start.getNodeTowards(side);
++            PneumaticRoutePhase phase;
++            if (next == null) {
++                phase = PneumaticRoutePhase.ENDPOINT;
++            } else if (next instanceof PneumaticTransportContainer && next.canPropagate(side ^ 1)) {
++                phase = PneumaticRoutePhase.TUBE;
++            } else {
++                continue; // Never send a packet into a connected non-transport graph node.
++            }
++
++            Direction dir = Direction.values()[side];
++            int cost = phase == PneumaticRoutePhase.TUBE ? Math.max(1, start.getLinkWeight()) : 0;
++            if (evaluate(startPos, startPos.relative(dir), dir, cost, phase).allowed()) {
++                mask |= 1 << side;
++            }
++        }
++        return mask;
++    }
++
++    private int searchMode(int firstHopMask, PneumaticTransportMode mode) {
++        PriorityQueue<State> open = new PriorityQueue<>(Comparator.comparingInt(State::cost));
++        Map<GraphContainer, int[][]> best = new IdentityHashMap<>();
++
++        State root = new State(start, startTransport, startPos, payload.getInputSide(), NONE, 0);
++        remember(best, root);
++        open.add(root);
++
++        int bestExitCost = PneumaticRouteRegistry.MAX_COST;
++        int bestExitMask = 0;
++
++        while (!open.isEmpty()) {
++            State state = open.poll();
++            if (state.cost() != recorded(best, state)) continue; // superseded state
++            if (state.cost() > bestExitCost) break; // remaining states only cost more
++
++            int candidateMask = state.firstSide() == NONE
++                    ? firstHopMask : ALL_SIDES & ~(1 << state.incomingSide());
++
++            // Check endpoints before traversing more tubes: local exits cost zero.
++            for (int side = 0; side < 6; side++) {
++                if ((candidateMask & (1 << side)) == 0) continue;
++                if (!state.transport().canItemExitTube(payload, side, mode)) continue;
++
++                Direction dir = Direction.values()[side];
++                PneumaticRouteDecision decision = evaluate(
++                        state.pos(), state.pos().relative(dir), dir, 0, PneumaticRoutePhase.ENDPOINT);
++                if (!decision.allowed()) continue;
++
++                int exitCost = safeAdd(state.cost(), decision.additionalCost());
++                int initialSide = state.firstSide() == NONE ? side : state.firstSide();
++                if (exitCost < bestExitCost) {
++                    bestExitCost = exitCost;
++                    bestExitMask = 0;
++                }
++                if (exitCost == bestExitCost) bestExitMask |= 1 << initialSide;
++            }
++
++            for (int side = 0; side < 6; side++) {
++                if ((candidateMask & (1 << side)) == 0) continue;
++                if (!state.graph().canPropagate(side)) continue;
++
++                GraphContainer next = state.graph().getNodeTowards(side);
++                if (!(next instanceof PneumaticTransportContainer transport)
++                        || !next.canPropagate(side ^ 1) || next == start) continue;
++
++                Direction dir = Direction.values()[side];
++                int baseCost = Math.max(1, state.graph().getLinkWeight());
++                BlockPos nextPos = state.pos().relative(dir);
++                PneumaticRouteDecision decision = evaluate(
++                        state.pos(), nextPos, dir, baseCost, PneumaticRoutePhase.TUBE);
++                if (!decision.allowed()) continue;
++
++                int newCost = safeAdd(state.cost(), safeAdd(baseCost, decision.additionalCost()));
++                if (newCost >= bestExitCost || newCost >= PneumaticRouteRegistry.MAX_COST) continue;
++
++                int firstSide = state.firstSide() == NONE ? side : state.firstSide();
++                State candidate = new State(next, transport, nextPos, side ^ 1, firstSide, newCost);
++                if (newCost < recorded(best, candidate)) {
++                    remember(best, candidate);
++                    open.add(candidate);
++                }
++            }
++        }
++        return bestExitMask;
++    }
++
++    private PneumaticRouteDecision evaluate(BlockPos from, BlockPos to, Direction dir, int baseCost,
++                                            PneumaticRoutePhase phase) {
++        return Objects.requireNonNull(evaluator.evaluate(
++                payload, new PneumaticRouteContext(level, from, to, dir, baseCost, phase)));
++    }
++
++    private static int safeAdd(int a, int b) {
++        return (int) Math.min(PneumaticRouteRegistry.MAX_COST, (long) a + b);
++    }
++
++    private static int recorded(Map<GraphContainer, int[][]> best, State state) {
++        int[][] costs = best.get(state.graph());
++        if (costs == null) return PneumaticRouteRegistry.MAX_COST;
++        return costs[state.firstSide() == NONE ? 6 : state.firstSide()]
++                [state.incomingSide() == NONE ? 6 : state.incomingSide()];
++    }
++
++    private static void remember(Map<GraphContainer, int[][]> best, State state) {
++        int[][] costs = best.computeIfAbsent(state.graph(), ignored -> {
++            int[][] blank = new int[7][7];
++            for (int[] row : blank) Arrays.fill(row, PneumaticRouteRegistry.MAX_COST);
++            return blank;
++        });
++        costs[state.firstSide() == NONE ? 6 : state.firstSide()]
++                [state.incomingSide() == NONE ? 6 : state.incomingSide()] = state.cost();
++    }
++
++    private record State(GraphContainer graph, PneumaticTransportContainer transport, BlockPos pos,
++                         int incomingSide, int firstSide, int cost) { }
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+@@ -6,6 +6,8 @@
+ import codechicken.multipart.api.part.TickablePart;
+ import codechicken.multipart.block.TileMultipart;
+ import mrtjp.projectred.api.IConnectable;
++import mrtjp.projectred.api.pneumatics.PneumaticRouteContext;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePhase;
+ import mrtjp.projectred.core.CenterLookup;
+ import mrtjp.projectred.expansion.TubeType;
+ import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
+@@ -367,6 +369,20 @@
+         //     the dumb non-node pipes will choose the redstone side. For temporary fix, {@link checkRedundant}
+         //     will mark all tubes with conns > 2 as non-redundant.
+         int connMask = getConnMap() & 0x3F;
++
++        // Opt-in payload-aware routing; vanilla ProjectRed retains its cached graph path.
++        if (PneumaticRouteRegistry.hasPolicies()) {
++            int forwardMask = connMask & ~(1 << payload.getInputSide());
++            PolicyAwarePneumaticPathfinder finder = new PolicyAwarePneumaticPathfinder(
++                    this, this, level(), pos(), payload);
++            int selected = finder.findExitMask(forwardMask,
++                    List.of(PneumaticTransportMode.values()));
++            if (selected == 0) selected = finder.immediateAllowedMask(forwardMask);
++            if (selected == 0) selected = finder.immediateAllowedMask(connMask); // legal bounce
++            if (selected != 0) setOutputRoundRobin(payload, selected);
++            return; // no compatible transition: the transport holds the payload near its centre
++        }
++
+         int connCount = Integer.bitCount(getConnMap() & 0x3F);
+         // Error case. For whatever reason, we have no connections
+         if (connCount == 0) {
+@@ -441,8 +457,23 @@
+ 
+         CenterLookup lookup = CenterLookup.lookupStraightCenter(level(), pos(), payload.getOutputSide());
+ 
+-        // Pass to next tube
++        // Pass to next tube. Re-check in case a routing property changed after
++        // direction selection (e.g. another player repainted the destination).
+         if (lookup.part instanceof PneumaticTransportContainer ptc) {
++            if (PneumaticRouteRegistry.hasPolicies()) {
++                Direction outDir = Direction.values()[payload.getOutputSide()];
++                var decision = PneumaticRouteRegistry.evaluate(payload, new PneumaticRouteContext(
++                        level(), pos(), pos().relative(outDir), outDir, 1, PneumaticRoutePhase.TUBE));
++                if (!decision.allowed()) {
++                    int previousInput = payload.getInputSide();
++                    payload.setInputSide(payload.getOutputSide());
++                    payload.setOutputSide(previousInput);
++                    payload.resetProgress();
++                    sendPayloadUpdate(id, payload);
++                    return false;
++                }
++            }
++
+             // Set new directions
+             int side = payload.getOutputSide();
+             payload.setInputSide(payload.getOutputSide() ^ 1);
+@@ -532,6 +563,16 @@
+             return false;
+         }
+ 
++        if (PneumaticRouteRegistry.hasPolicies()) {
++            Direction enterDir = Direction.values()[side ^ 1];
++            var entry = PneumaticRouteRegistry.evaluate(payload, new PneumaticRouteContext(
++                    level(), pos().relative(Direction.values()[side]), pos(), enterDir, 1,
++                    PneumaticRoutePhase.TUBE));
++            if (!entry.allowed()) return false;
++            return new PolicyAwarePneumaticPathfinder(this, this, level(), pos(), payload)
++                    .findExitMask(~(1 << side), List.of(PneumaticTransportMode.PASSIVE_NORMAL)) != 0;
++        }
++
+         PneumaticExitPathfinder exitFinder = new PneumaticExitPathfinder(this, getNode().getRouteTable(), payload, ~(1 << side), List.of(PneumaticTransportMode.PASSIVE_NORMAL));
+         return exitFinder.result().exitDirMask() != 0;
+     }
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticTransport.java b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticTransport.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticTransport.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/pneumatics/PneumaticTransport.java
+@@ -124,10 +124,16 @@
+             payload.incrementProgress();
+             int p2 = payload.getProgress();
+ 
+-            // Calc output direction right before reaching middle
+-            int outputCalcBoundary = MAX_PROGRESS / 2 - payload.getSpeed();
+-            if (p1 < outputCalcBoundary && p2 >= outputCalcBoundary) {
+-                container.setOutputDirection(payload);
++            // Resolve the output while approaching the centre. A restricted item
++            // with no legal route waits and retries instead of timing out or
++            // entering a forbidden tube.
++            int outputCalcBoundary = MAX_PROGRESS / 2 - payload.getSpeed();
++            if (!payload.hasOutputSide() && p2 >= outputCalcBoundary) {
++                container.setOutputDirection(payload);
++                if (!payload.hasOutputSide()) {
++                    payload.setProgress(Math.max(0, outputCalcBoundary - 1));
++                    continue;
++                }
+                 container.onPayloadChanged(e.getKey(), payload);
+             }
+ 
+diff --git a/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinderTest.java b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinderTest.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/test/java/mrtjp/projectred/expansion/pneumatics/PolicyAwarePneumaticPathfinderTest.java
+@@ -0,0 +1,120 @@
++package mrtjp.projectred.expansion.pneumatics;
++
++import mrtjp.projectred.api.pneumatics.PneumaticRouteDecision;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePhase;
++import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.expansion.graphs.GraphContainer;
++import mrtjp.projectred.expansion.graphs.GraphNode;
++import mrtjp.projectred.expansion.part.PneumaticTubePayload;
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Direction;
++import net.minecraft.world.item.ItemStack;
++import net.minecraft.world.level.Level;
++import org.junit.jupiter.api.Test;
++
++import java.util.HashMap;
++import java.util.List;
++import java.util.Map;
++
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.mock;
++
++/** A shorter forbidden path must not hide a longer compatible alternative. */
++class PolicyAwarePneumaticPathfinderTest {
++
++    private static final int EAST = Direction.EAST.ordinal();
++    private static final int SOUTH = Direction.SOUTH.ordinal();
++    private static final int NORTH = Direction.NORTH.ordinal();
++    private static final int UP = Direction.UP.ordinal();
++
++    @Test
++    void longerCompatibleRouteBeatsShorterBlockedRoute() {
++        TestTube start = new TestTube();
++        TestTube blue = new TestTube();
++        TestTube target = new TestTube();
++        TestTube alternate1 = new TestTube();
++        TestTube alternate2 = new TestTube();
++        TestTube alternate3 = new TestTube();
++
++        start.link(EAST, blue);
++        blue.link(EAST, target);                   // 2-hop route, blocked by policy
++        start.link(SOUTH, alternate1);
++        alternate1.link(EAST, alternate2);
++        alternate2.link(EAST, alternate3);
++        alternate3.link(NORTH, target);             // 4-hop route, permitted
++        target.endpoint = UP;
++
++        Level level = mock(Level.class);
++        PneumaticTubePayload payload = new PneumaticTubePayload(ItemStack.EMPTY);
++        PneumaticRoutePolicy colourPolicy = (p, ctx) ->
++                ctx.phase() == PneumaticRoutePhase.TUBE
++                        && ctx.toPos().equals(new BlockPos(1, 0, 0))
++                        ? PneumaticRouteDecision.BLOCK : PneumaticRouteDecision.PASS;
++
++        int available = new PolicyAwarePneumaticPathfinder(start, start, level,
++                BlockPos.ZERO, payload, colourPolicy)
++                .findExitMask((1 << EAST) | (1 << SOUTH),
++                        List.of(PneumaticTransportMode.PASSIVE_NORMAL));
++
++        assertEquals(1 << SOUTH, available);
++    }
++
++    @Test
++    void unfilteredSearchKeepsTheShorterRoute() {
++        TestTube start = new TestTube();
++        TestTube shortPath = new TestTube();
++        TestTube longPath1 = new TestTube();
++        TestTube longPath2 = new TestTube();
++        TestTube target = new TestTube();
++
++        start.link(EAST, shortPath);
++        shortPath.link(EAST, target);
++        start.link(SOUTH, longPath1);
++        longPath1.link(EAST, longPath2);
++        longPath2.link(NORTH, target);
++        target.endpoint = UP;
++
++        int available = new PolicyAwarePneumaticPathfinder(start, start, mock(Level.class),
++                BlockPos.ZERO, new PneumaticTubePayload(ItemStack.EMPTY),
++                (p, ctx) -> PneumaticRouteDecision.PASS)
++                .findExitMask((1 << EAST) | (1 << SOUTH),
++                        List.of(PneumaticTransportMode.PASSIVE_NORMAL));
++
++        assertEquals(1 << EAST, available);
++    }
++
++    private static final class TestTube implements GraphContainer, PneumaticTransportContainer {
++        private final Map<Integer, TestTube> next = new HashMap<>();
++        private int endpoint = -1;
++
++        void link(int direction, TestTube other) {
++            next.put(direction, other);
++            other.next.put(direction ^ 1, this);
++        }
++
++        @Override public boolean canPropagate(int side) {
++            return next.containsKey(side) || endpoint == side;
++        }
++
++        @Override public GraphContainer getNodeTowards(int dir) {
++            return next.get(dir);
++        }
++
++        @Override public GraphNode getNode() {
++            throw new UnsupportedOperationException("No compressed node needed for this test");
++        }
++
++        @Override public boolean requiresActiveNode() { return true; }
++        @Override public void onNodeChanged(boolean linksChanged, boolean stateChange) { }
++
++        @Override public PneumaticTransport getPneumaticTransport() { return null; }
++        @Override public void setOutputDirection(PneumaticTubePayload payload) { }
++        @Override public void onPayloadChanged(int id, PneumaticTubePayload payload) { }
++        @Override public boolean onPayloadReachedOutput(int id, PneumaticTubePayload payload) { return false; }
++        @Override public boolean canItemEnterTube(PneumaticTubePayload payload, int side) { return false; }
++        @Override public boolean canItemExitTube(PneumaticTubePayload payload, int side, PneumaticTransportMode mode) {
++            return side == endpoint && mode == PneumaticTransportMode.PASSIVE_NORMAL;
++        }
++        @Override public boolean insertPayload(int side, PneumaticTubePayload payload) { return false; }
++    }
++}

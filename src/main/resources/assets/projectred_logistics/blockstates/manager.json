@@ -1,0 +1,112 @@
+{
+  "variants": {
+    "active=false,side=0,working=false": {
+      "model": "projectred_logistics:block/manager"
+    },
+    "active=false,side=1,working=false": {
+      "model": "projectred_logistics:block/manager",
+      "x": 180,
+      "y": 180
+    },
+    "active=false,side=2,working=false": {
+      "model": "projectred_logistics:block/manager",
+      "x": 90,
+      "y": 180
+    },
+    "active=false,side=3,working=false": {
+      "model": "projectred_logistics:block/manager",
+      "x": 90
+    },
+    "active=false,side=4,working=false": {
+      "model": "projectred_logistics:block/manager",
+      "x": 90,
+      "y": 90
+    },
+    "active=false,side=5,working=false": {
+      "model": "projectred_logistics:block/manager",
+      "x": 90,
+      "y": 270
+    },
+    "active=false,side=0,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied"
+    },
+    "active=false,side=1,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied",
+      "x": 180,
+      "y": 180
+    },
+    "active=false,side=2,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied",
+      "x": 90,
+      "y": 180
+    },
+    "active=false,side=3,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied",
+      "x": 90
+    },
+    "active=false,side=4,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied",
+      "x": 90,
+      "y": 90
+    },
+    "active=false,side=5,working=true": {
+      "model": "projectred_logistics:block/manager_satisfied",
+      "x": 90,
+      "y": 270
+    },
+    "active=true,side=0,working=false": {
+      "model": "projectred_logistics:block/manager_active"
+    },
+    "active=true,side=1,working=false": {
+      "model": "projectred_logistics:block/manager_active",
+      "x": 180,
+      "y": 180
+    },
+    "active=true,side=2,working=false": {
+      "model": "projectred_logistics:block/manager_active",
+      "x": 90,
+      "y": 180
+    },
+    "active=true,side=3,working=false": {
+      "model": "projectred_logistics:block/manager_active",
+      "x": 90
+    },
+    "active=true,side=4,working=false": {
+      "model": "projectred_logistics:block/manager_active",
+      "x": 90,
+      "y": 90
+    },
+    "active=true,side=5,working=false": {
+      "model": "projectred_logistics:block/manager_active",
+      "x": 90,
+      "y": 270
+    },
+    "active=true,side=0,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied"
+    },
+    "active=true,side=1,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied",
+      "x": 180,
+      "y": 180
+    },
+    "active=true,side=2,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied",
+      "x": 90,
+      "y": 180
+    },
+    "active=true,side=3,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied",
+      "x": 90
+    },
+    "active=true,side=4,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied",
+      "x": 90,
+      "y": 90
+    },
+    "active=true,side=5,working=true": {
+      "model": "projectred_logistics:block/manager_active_satisfied",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

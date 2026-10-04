@@ -35,12 +35,60 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods.getByName('projectred_logistics')
+    }
 }
 
+def useLocalProjectRed = providers.gradleProperty('use_local_projectred')
+        .map { it.toBoolean() }
+        .getOrElse(false)
+
 dependencies {
-    compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
-    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
-    runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+    // Client rendering and exact multipart hit detection use the same CCL/CBM
+    // APIs already required by ProjectRed.
+    compileOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
+    compileOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    if (useLocalProjectRed) {
+        // Patched ProjectRed development build published with:
+        // AUTO_GENERATED_VERSION=5.0-logistics-dev ./gradlew publishToMavenLocal
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
+        compileOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
+
+        // Tests compile against the public pneumatic payload API, but the API
+        // must not be added again at test runtime: NeoForge's tested-mod
+        // launcher already supplies ProjectRed and a second API module causes
+        // a duplicate-package module resolution failure.
+        testCompileOnly "mrtjp:ProjectRed:${projectred_local_version}:api"
+
+        // ModDev already places the compileOnly API on the development module
+        // path. Adding the API again as runtimeOnly creates a duplicate Java
+        // module, so only the actual runtime modules are listed here.
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:core"
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:expansion"
+        // Development convenience: lets runClient test ProjectRed's external
+        // red-alloy wire against redstone-capable pneumatic tubes.
+        runtimeOnly "mrtjp:ProjectRed:${projectred_local_version}:transmission"
+        runtimeOnly "io.codechicken:CodeChickenLib:${minecraft_version}-${ccl_version}"
+        runtimeOnly "io.codechicken:CBMultipart:${minecraft_version}-${cbm_version}"
+    } else {
+        // Public release dependency. This path will become usable for the new
+        // API once ProjectRed publishes the pneumatic extension upstream.
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
+        compileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+        testCompileOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:api"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:core"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:expansion"
+        runtimeOnly "mrtjp:ProjectRed-${minecraft_version}:${projectred_version}:transmission"
+    }
 }
 
 processResources {
@@ -56,4 +104,10 @@ processResources {
     filesMatching('META-INF/neoforge.mods.toml') {
         expand(props)
     }
+}
+
+
+test {
+    useJUnitPlatform()
+    jvmArgs('-Xmx2G', '-Xms512M')
 }

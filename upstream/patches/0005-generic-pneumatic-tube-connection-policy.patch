@@ -1,0 +1,156 @@
+diff --git a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+--- a/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
++++ b/api/src/main/java/mrtjp/projectred/api/IExpansionAPI.java
+@@ -1,6 +1,7 @@
+ package mrtjp.projectred.api;
+ 
+ import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.api.pneumatics.PneumaticTubeConnectionPolicy;
+ import mrtjp.projectred.api.pneumatics.PneumaticTube;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.resources.ResourceLocation;
+@@ -49,6 +50,14 @@ public interface IExpansionAPI {
+      */
+     void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy);
+ 
++    /**
++     * Registers a policy that may veto physical tube-to-tube connections.
++     * Policies are evaluated when ProjectRed rebuilds tube connection masks.
++     *
++     * @param policy Connection policy to register
++     */
++    void registerPneumaticTubeConnectionPolicy(PneumaticTubeConnectionPolicy policy);
++
+     /**
+      * Returns the pneumatic tube occupying the center multipart slot at the
+      * supplied position, or null when no pneumatic tube is present.
+diff --git a/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeConnectionPolicy.java b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeConnectionPolicy.java
+new file mode 100644
+--- /dev/null
++++ b/api/src/main/java/mrtjp/projectred/api/pneumatics/PneumaticTubeConnectionPolicy.java
+@@ -0,0 +1,25 @@
++package mrtjp.projectred.api.pneumatics;
++
++import net.minecraft.core.Direction;
++
++/**
++ * Extension point for physical pneumatic tube compatibility.
++ *
++ * This is intentionally payload-independent: it controls whether two adjacent
++ * tubes are part of the same physical topology at all. Implementations should
++ * be deterministic from tube/world state and should normally be symmetric.
++ */
++@FunctionalInterface
++public interface PneumaticTubeConnectionPolicy {
++
++    /**
++     * @param from tube whose connection mask is being rebuilt
++     * @param to adjacent pneumatic tube
++     * @param direction direction from {@code from} toward {@code to}
++     * @return true when the two tubes may physically connect
++     */
++    boolean canConnect(
++            PneumaticTube from,
++            PneumaticTube to,
++            Direction direction);
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/ExpansionAPI.java
+@@ -4,6 +4,7 @@
+ import mrtjp.projectred.api.*;
+ import codechicken.multipart.block.TileMultipart;
+ import mrtjp.projectred.api.pneumatics.PneumaticRoutePolicy;
++import mrtjp.projectred.api.pneumatics.PneumaticTubeConnectionPolicy;
+ import mrtjp.projectred.api.pneumatics.PneumaticTube;
+ import mrtjp.projectred.expansion.client.MovementClientRegistry;
+ import mrtjp.projectred.expansion.part.PneumaticTubePart;
+@@ -24,6 +25,11 @@ public void registerPneumaticRoutePolicy(PneumaticRoutePolicy policy) {
+         PneumaticRouteRegistry.register(policy);
+     }
+ 
++    @Override
++    public void registerPneumaticTubeConnectionPolicy(PneumaticTubeConnectionPolicy policy) {
++        PneumaticTubeConnectionRegistry.register(policy);
++    }
++
+     @Override
+     public PneumaticTube getPneumaticTube(Level level, BlockPos pos) {
+         var tile = level.getBlockEntity(pos);
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubeConnectionRegistry.java b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubeConnectionRegistry.java
+new file mode 100644
+--- /dev/null
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/PneumaticTubeConnectionRegistry.java
+@@ -0,0 +1,32 @@
++package mrtjp.projectred.expansion;
++
++import mrtjp.projectred.api.pneumatics.PneumaticTube;
++import mrtjp.projectred.api.pneumatics.PneumaticTubeConnectionPolicy;
++import net.minecraft.core.Direction;
++
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.CopyOnWriteArrayList;
++
++public final class PneumaticTubeConnectionRegistry {
++
++    private static final List<PneumaticTubeConnectionPolicy> POLICIES =
++            new CopyOnWriteArrayList<>();
++
++    private PneumaticTubeConnectionRegistry() { }
++
++    public static void register(PneumaticTubeConnectionPolicy policy) {
++        POLICIES.add(Objects.requireNonNull(policy, "policy"));
++    }
++
++    public static boolean canConnect(
++            PneumaticTube from,
++            PneumaticTube to,
++            Direction direction) {
++
++        for (var policy : POLICIES) {
++            if (!policy.canConnect(from, to, direction)) return false;
++        }
++        return true;
++    }
++}
+diff --git a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+--- a/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
++++ b/expansion/src/main/java/mrtjp/projectred/expansion/part/PneumaticTubePart.java
+@@ -12,6 +12,7 @@
+ import mrtjp.projectred.api.pneumatics.PneumaticTubeData;
+ import mrtjp.projectred.core.CenterLookup;
+ import mrtjp.projectred.expansion.PneumaticRouteRegistry;
++import mrtjp.projectred.expansion.PneumaticTubeConnectionRegistry;
+ import mrtjp.projectred.expansion.TubeType;
+ import mrtjp.projectred.expansion.client.PneumaticSmokeParticle;
+ import mrtjp.projectred.expansion.graphs.ClientSideLinkCache;
+@@ -191,6 +192,16 @@ private void onTubeDataChanged() {
+         if (level().isClientSide) return;
+ 
+         tile().setChanged();
++        updateOutside();
++
++        // Connection policy may depend on metadata. Neighbouring multipart
++        // tubes must also rebuild their masks when this tube's metadata changes.
++        for (int s = 0; s < 6; s++) {
++            var neighbour = posOfStraight(s);
++            level().neighborChanged(
++                    neighbour, tile().getBlockState().getBlock(), pos());
++        }
++
+         node.markLinksChanged();
+         sendTubeDataUpdate();
+     }
+@@ -278,3 +287,11 @@ public boolean canConnectPart(IConnectable part, int s) {
++        if (part instanceof PneumaticTube otherTube
++                && !PneumaticTubeConnectionRegistry.canConnect(
++                        this,
++                        otherTube,
++                        Direction.values()[s])) {
++            return false;
++        }
++
+         if (part instanceof PneumaticTransportContainer) return true;
+ 
+         return super.canConnectPart(part, s);
