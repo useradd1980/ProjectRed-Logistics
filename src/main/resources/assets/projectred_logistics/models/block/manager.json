@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "bottom": "projectred_logistics:block/sorting_machine_top",
-    "side": "projectred_logistics:block/sorting_machine_side",
-    "top": "projectred_logistics:block/sorting_machine_bottom"
+    "bottom": "projectred_logistics:block/manager_front",
+    "side": "projectred_logistics:block/manager_side",
+    "top": "projectred_logistics:block/manager_back"
   }
 }
