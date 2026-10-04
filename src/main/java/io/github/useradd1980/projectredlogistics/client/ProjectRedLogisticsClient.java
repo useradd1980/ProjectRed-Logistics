@@ -1,12 +1,10 @@
 package io.github.useradd1980.projectredlogistics.client;
 
 import codechicken.multipart.api.MultipartClientRegistry;
-import codechicken.multipart.api.part.render.PartRenderer;
 import io.github.useradd1980.projectredlogistics.client.screen.FilterScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.ManagerScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.SortingMachineScreen;
 import io.github.useradd1980.projectredlogistics.init.LogisticsContent;
-import mrtjp.projectred.expansion.client.TubePartRenderer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -35,11 +33,10 @@ public final class ProjectRedLogisticsClient {
         NeoForge.EVENT_BUS.addListener(PaintedTubeClientManager::onRenderLevelStage);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private static void clientSetup(FMLClientSetupEvent event) {
         MultipartClientRegistry.register(
                 LogisticsContent.RESTRICTION_TUBE_PART.get(),
-                (PartRenderer) TubePartRenderer.INSTANCE);
+                RestrictionTubePartRenderer.INSTANCE);
     }
 
     private static void registerMenuScreens(RegisterMenuScreensEvent event) {
