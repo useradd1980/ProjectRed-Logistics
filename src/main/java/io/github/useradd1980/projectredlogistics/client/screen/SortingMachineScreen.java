@@ -23,6 +23,11 @@ public class SortingMachineScreen
                     "projectred_logistics",
                     "textures/gui/sorting_machine_icons.png");
 
+    private static final ResourceLocation RP2_SORTING_GUI =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/rp2_sortmachine.png");
+
     // Use ProjectRed Expansion's actual Auto Crafter GUI sheet. This gives
     // the Sorting Machine the same window bevel, slot panel styling and
     // power-meter artwork instead of recreating those pixels procedurally.
@@ -348,8 +353,8 @@ public class SortingMachineScreen
 
             drawColourButton(
                     graphics,
-                    x + 36 + column * 18,
-                    y + 110,
+                    x + 35 + column * 18,
+                    y + 109,
                     menu.getColumnColour(column));
         }
     }
@@ -493,22 +498,34 @@ public class SortingMachineScreen
             int y,
             int colour) {
 
-        graphics.fill(x, y, x + 12, y + 12, 0xFF373737);
-        graphics.fill(x + 1, y + 1, x + 11, y + 11, 0xFFC6C6C6);
-        graphics.fill(x + 2, y + 2, x + 10, y + 10, 0xFF6F6F6F);
+        // RP2 used the same 14x14 routing-colour button for every column.
+        // In sortmachine.png the canonical button is at u=27, v=109.
+        graphics.blit(
+                RP2_SORTING_GUI,
+                x,
+                y,
+                27,
+                109,
+                14,
+                14);
 
         if (colour >= 0 && colour < PAINT_COLOURS.length) {
             graphics.fill(
-                    x + 4,
-                    y + 4,
-                    x + 8,
-                    y + 8,
+                    x + 5,
+                    y + 5,
+                    x + 9,
+                    y + 9,
                     0xFF000000 | PAINT_COLOURS[colour]);
         } else {
-            graphics.fill(x + 4, y + 4, x + 6, y + 6, 0xFFE0E0E0);
-            graphics.fill(x + 6, y + 6, x + 8, y + 8, 0xFFE0E0E0);
-            graphics.fill(x + 6, y + 4, x + 8, y + 6, 0xFF303030);
-            graphics.fill(x + 4, y + 6, x + 6, y + 8, 0xFF303030);
+            // RP2's original uncoloured 4x4 swatch.
+            graphics.blit(
+                    RP2_SORTING_GUI,
+                    x + 5,
+                    y + 5,
+                    187,
+                    92,
+                    4,
+                    4);
         }
     }
 
@@ -608,7 +625,7 @@ public class SortingMachineScreen
                 column < SortingMachineBlockEntity.COLUMNS;
                 column++) {
 
-            if (inside(rx, ry, 36 + column * 18, 110, 12, 12)) {
+            if (inside(rx, ry, 35 + column * 18, 109, 14, 14)) {
                 int id = SortingMachineMenu.BUTTON_COLUMN_BASE
                         + column * 2
                         + (forward ? 0 : 1);

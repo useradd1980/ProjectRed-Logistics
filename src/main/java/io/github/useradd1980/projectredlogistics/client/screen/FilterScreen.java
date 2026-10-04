@@ -32,6 +32,11 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
                     "projectred_logistics",
                     "textures/gui/sorting_machine_icons.png");
 
+    private static final ResourceLocation RP2_FILTER_GUI =
+            ResourceLocation.fromNamespaceAndPath(
+                    "projectred_logistics",
+                    "textures/gui/rp2_filter9.png");
+
     private static final int COLOUR_X = 118;
     private static final int COLOUR_Y = 55;
     private static final int COLOUR_SIZE = 12;
@@ -108,10 +113,15 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
         int sx = x + COLOUR_X;
         int sy = y + COLOUR_Y;
 
-        // Raised-looking 12x12 control frame.
-        graphics.fill(sx, sy, sx + COLOUR_SIZE, sy + COLOUR_SIZE, 0xFF373737);
-        graphics.fill(sx + 1, sy + 1, sx + COLOUR_SIZE - 1, sy + COLOUR_SIZE - 1, 0xFFC6C6C6);
-        graphics.fill(sx + 2, sy + 2, sx + COLOUR_SIZE - 2, sy + COLOUR_SIZE - 2, 0xFF6F6F6F);
+        // Exact 12x12 routing-colour button from RP2 filter9.png.
+        graphics.blit(
+                RP2_FILTER_GUI,
+                sx,
+                sy,
+                118,
+                55,
+                COLOUR_SIZE,
+                COLOUR_SIZE);
 
         int colourId = menu.getRouteColour();
         if (colourId >= 0 && colourId < PAINT_COLOURS.length) {
@@ -122,12 +132,15 @@ public class FilterScreen extends RedUIContainerScreen<FilterMenu> {
                     sy + 8,
                     0xFF000000 | PAINT_COLOURS[colourId]);
         } else {
-            // Uncoloured state: small neutral checker, analogous to RP2's
-            // special no-paint swatch.
-            graphics.fill(sx + 4, sy + 4, sx + 6, sy + 6, 0xFFE0E0E0);
-            graphics.fill(sx + 6, sy + 6, sx + 8, sy + 8, 0xFFE0E0E0);
-            graphics.fill(sx + 6, sy + 4, sx + 8, sy + 6, 0xFF303030);
-            graphics.fill(sx + 4, sy + 6, sx + 6, sy + 8, 0xFF303030);
+            // RP2's original uncoloured 4x4 swatch.
+            graphics.blit(
+                    RP2_FILTER_GUI,
+                    sx + 4,
+                    sy + 4,
+                    176,
+                    0,
+                    4,
+                    4);
         }
     }
 

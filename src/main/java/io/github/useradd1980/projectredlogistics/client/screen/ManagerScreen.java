@@ -221,7 +221,15 @@ public class ManagerScreen
                 CONTROL_SIZE,
                 CONTROL_SIZE);
 
-        drawControlFrame(graphics, x + COLOUR_X, y + COLOUR_Y);
+        // Exact RP2 Manager routing-colour button frame.
+        graphics.blit(
+                RP2_MANAGER_GUI,
+                x + COLOUR_X,
+                y + COLOUR_Y,
+                153,
+                73,
+                CONTROL_SIZE,
+                CONTROL_SIZE);
 
         String priority = Integer.toString(menu.getPriority());
         graphics.drawString(
@@ -241,10 +249,15 @@ public class ManagerScreen
                     y + COLOUR_Y + 9,
                     0xFF000000 | PAINT_COLOURS[colour]);
         } else {
-            graphics.fill(x + COLOUR_X + 5, y + COLOUR_Y + 5, x + COLOUR_X + 7, y + COLOUR_Y + 7, 0xFFE0E0E0);
-            graphics.fill(x + COLOUR_X + 7, y + COLOUR_Y + 7, x + COLOUR_X + 9, y + COLOUR_Y + 9, 0xFFE0E0E0);
-            graphics.fill(x + COLOUR_X + 7, y + COLOUR_Y + 5, x + COLOUR_X + 9, y + COLOUR_Y + 7, 0xFF303030);
-            graphics.fill(x + COLOUR_X + 5, y + COLOUR_Y + 7, x + COLOUR_X + 7, y + COLOUR_Y + 9, 0xFF303030);
+            // RP2's original uncoloured 4x4 swatch.
+            graphics.blit(
+                    RP2_MANAGER_GUI,
+                    x + COLOUR_X + 5,
+                    y + COLOUR_Y + 5,
+                    187,
+                    0,
+                    4,
+                    4);
         }
     }
 
