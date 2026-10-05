@@ -154,7 +154,7 @@ through in-game testing.
 - [x] Give the Restriction Tube a modern dark graphite/blackened-steel frame
       derived from ProjectRed's pneumatic-tube texture.
 - [x] Validate placement and route preference in-game.
-- [ ] Validate coloured routing, red-alloy wiring, and Electrotine power
+- [x] Validate coloured routing, red-alloy wiring, and Electrotine power
       coexistence on Restriction Tubes.
 
 ## Milestone 8 — Recipes and progression
