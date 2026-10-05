@@ -162,7 +162,9 @@ through in-game testing.
 - [x] Add RP2-derived Filter recipe.
 - [x] Add RP2-derived Sorting Machine recipe.
 - [x] Verify standard shaped recipes are visible through recipe-viewer mods.
-- [ ] Implement the Regulator.
+- [ ] Implement the Buffer and its RP2-derived crafting recipe.
+- [ ] Implement the Item Detector and its RP2-derived crafting recipe.
+- [ ] Implement the Regulator after its Buffer and Item Detector recipe dependencies exist.
 - [ ] Add the original RP2 Manager recipe once its Regulator dependency exists.
 - [ ] Review the remaining RP2 logistics-machine progression and recipes.
 
