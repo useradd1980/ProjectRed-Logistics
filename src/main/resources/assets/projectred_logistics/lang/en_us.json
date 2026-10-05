@@ -4,5 +4,6 @@
   "block.projectred_logistics.filter": "Filter",
   "block.projectred_logistics.sorting_machine": "Sorting Machine",
   "block.projectred_logistics.manager": "Manager",
-  "item.projectred_logistics.restriction_tube": "Restriction Tube"
+  "item.projectred_logistics.restriction_tube": "Restriction Tube",
+  "block.projectred_logistics.buffer": "Buffer"
 }

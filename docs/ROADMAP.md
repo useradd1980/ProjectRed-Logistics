@@ -162,7 +162,7 @@ through in-game testing.
 - [x] Add RP2-derived Filter recipe.
 - [x] Add RP2-derived Sorting Machine recipe.
 - [x] Verify standard shaped recipes are visible through recipe-viewer mods.
-- [ ] Implement the Buffer and its RP2-derived crafting recipe.
+- [~] Implement the Buffer and its RP2-derived crafting recipe. Core 20-slot inventory, sided access, GUI, and recipe are implemented; in-game validation and final block artwork remain.
 - [ ] Implement the Item Detector and its RP2-derived crafting recipe.
 - [ ] Implement the Regulator after its Buffer and Item Detector recipe dependencies exist.
 - [ ] Add the original RP2 Manager recipe once its Regulator dependency exists.

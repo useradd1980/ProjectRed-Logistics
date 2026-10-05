@@ -1,6 +1,7 @@
 package io.github.useradd1980.projectredlogistics.client;
 
 import codechicken.multipart.api.MultipartClientRegistry;
+import io.github.useradd1980.projectredlogistics.client.screen.BufferScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.FilterScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.ManagerScreen;
 import io.github.useradd1980.projectredlogistics.client.screen.SortingMachineScreen;
@@ -40,6 +41,7 @@ public final class ProjectRedLogisticsClient {
     }
 
     private static void registerMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(LogisticsContent.BUFFER_MENU.get(), BufferScreen::new);
         event.register(LogisticsContent.FILTER_MENU.get(), FilterScreen::new);
         event.register(
                 LogisticsContent.SORTING_MACHINE_MENU.get(),

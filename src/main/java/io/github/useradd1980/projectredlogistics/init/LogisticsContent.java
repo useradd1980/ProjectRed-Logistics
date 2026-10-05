@@ -4,12 +4,15 @@ import codechicken.lib.inventory.container.CCLMenuType;
 import codechicken.multipart.api.MultipartType;
 import codechicken.multipart.api.SimpleMultipartType;
 import io.github.useradd1980.projectredlogistics.ProjectRedLogistics;
+import io.github.useradd1980.projectredlogistics.block.BufferBlock;
 import io.github.useradd1980.projectredlogistics.block.FilterBlock;
 import io.github.useradd1980.projectredlogistics.block.ManagerBlock;
 import io.github.useradd1980.projectredlogistics.block.SortingMachineBlock;
+import io.github.useradd1980.projectredlogistics.block.entity.BufferBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.ManagerBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.SortingMachineBlockEntity;
+import io.github.useradd1980.projectredlogistics.menu.BufferMenu;
 import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
 import io.github.useradd1980.projectredlogistics.menu.ManagerMenu;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
@@ -34,6 +37,7 @@ import java.util.function.Supplier;
 
 public final class LogisticsContent {
 
+    public static final String ID_BUFFER = "buffer";
     public static final String ID_FILTER = "filter";
     public static final String ID_SORTING_MACHINE = "sorting_machine";
     public static final String ID_MANAGER = "manager";
@@ -51,6 +55,13 @@ public final class LogisticsContent {
             DeferredRegister.create(MultipartType.MULTIPART_TYPES, ProjectRedLogistics.MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ProjectRedLogistics.MOD_ID);
+
+    public static final Supplier<Block> BUFFER_BLOCK =
+            BLOCKS.register(ID_BUFFER, BufferBlock::new);
+
+    public static final Supplier<Item> BUFFER_ITEM =
+            ITEMS.register(ID_BUFFER,
+                    () -> new BlockItem(BUFFER_BLOCK.get(), new Item.Properties()));
 
     public static final Supplier<Block> FILTER_BLOCK =
             BLOCKS.register(ID_FILTER, FilterBlock::new);
@@ -81,6 +92,13 @@ public final class LogisticsContent {
     public static final Supplier<Item> RESTRICTION_TUBE_ITEM =
             ITEMS.register(ID_RESTRICTION_TUBE, RestrictionTubeItem::new);
 
+    public static final Supplier<BlockEntityType<BufferBlockEntity>> BUFFER_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register(
+                    ID_BUFFER,
+                    () -> BlockEntityType.Builder
+                            .of(BufferBlockEntity::new, BUFFER_BLOCK.get())
+                            .build(null));
+
     public static final Supplier<BlockEntityType<FilterBlockEntity>> FILTER_BLOCK_ENTITY =
             BLOCK_ENTITY_TYPES.register(
                     ID_FILTER,
@@ -101,6 +119,9 @@ public final class LogisticsContent {
                     () -> BlockEntityType.Builder
                             .of(ManagerBlockEntity::new, MANAGER_BLOCK.get())
                             .build(null));
+
+    public static final Supplier<MenuType<BufferMenu>> BUFFER_MENU =
+            MENU_TYPES.register(ID_BUFFER, () -> CCLMenuType.create(BufferMenu.FACTORY));
 
     public static final Supplier<MenuType<FilterMenu>> FILTER_MENU =
             MENU_TYPES.register(ID_FILTER, () -> CCLMenuType.create(FilterMenu.FACTORY));
@@ -123,6 +144,7 @@ public final class LogisticsContent {
                             .title(Component.translatable(
                                     "itemGroup." + ProjectRedLogistics.MOD_ID))
                             .displayItems((parameters, output) -> {
+                                output.accept(BUFFER_ITEM.get());
                                 output.accept(FILTER_ITEM.get());
                                 output.accept(SORTING_MACHINE_ITEM.get());
                                 output.accept(MANAGER_ITEM.get());
@@ -142,6 +164,11 @@ public final class LogisticsContent {
     }
 
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                BUFFER_BLOCK_ENTITY.get(),
+                (tile, side) -> tile.getItemHandler(side));
+
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 FILTER_BLOCK_ENTITY.get(),

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "side=0": {"model": "projectred_logistics:block/buffer"},
+    "side=1": {"model": "projectred_logistics:block/buffer", "x": 180, "y": 180},
+    "side=2": {"model": "projectred_logistics:block/buffer", "x": 90, "y": 180},
+    "side=3": {"model": "projectred_logistics:block/buffer", "x": 90},
+    "side=4": {"model": "projectred_logistics:block/buffer", "x": 90, "y": 90},
+    "side=5": {"model": "projectred_logistics:block/buffer", "x": 90, "y": 270}
+  }
+}

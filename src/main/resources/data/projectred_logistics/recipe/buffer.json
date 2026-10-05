@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {"item": "minecraft:iron_bars"},
+    "W": {"tag": "minecraft:planks"}
+  },
+  "pattern": [
+    "BWB",
+    "W W",
+    "BWB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "projectred_logistics:buffer"
+  }
+}
