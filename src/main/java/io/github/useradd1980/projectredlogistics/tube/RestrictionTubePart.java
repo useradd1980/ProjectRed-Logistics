@@ -27,20 +27,4 @@ public final class RestrictionTubePart extends PneumaticTubePart {
     protected ItemStack getItem() {
         return new ItemStack(LogisticsContent.RESTRICTION_TUBE_ITEM.get());
     }
-
-    /**
-     * A Restriction Tube must always survive ProjectRed's graph compression.
-     *
-     * Its routing penalty is attached to this exact tube location. If this
-     * part were allowed to become a redundant node, the route policy could
-     * never see it and the 1,000,000-point RP2 routing penalty would be lost.
-     *
-     * Declaring the dedicated part active directly is also more robust across
-     * chunk/world reloads than rediscovering the part through the public API
-     * while the graph itself is being rebuilt.
-     */
-    @Override
-    public boolean requiresActiveNode() {
-        return true;
-    }
 }
