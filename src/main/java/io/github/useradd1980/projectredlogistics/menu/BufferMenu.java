@@ -38,14 +38,22 @@ public class BufferMenu extends AbstractContainerMenu {
         super(LogisticsContent.BUFFER_MENU.get(), windowId);
         this.buffer = buffer;
 
-        InventoryLib.addInventory(
-                buffer.getInventory(),
-                0,
-                44,
-                18,
-                5,
-                4,
-                this::addSlot);
+        // RP2's Buffer inventory is column-major: slots 0-3 are the
+        // first visible column, 4-7 the second, and so on. Keep that exact
+        // ordering here because sided access exposes one contiguous 4-slot
+        // column at a time and the front face drains 0..19 in that order.
+        //
+        // InventoryLib.addInventory() is row-major, so using it here scrambles
+        // the visual positions of the otherwise-correct Buffer slot mapping.
+        for (int column = 0; column < 5; column++) {
+            for (int row = 0; row < 4; row++) {
+                addSlot(new Slot(
+                        buffer.getInventory(),
+                        row + column * 4,
+                        44 + column * 18,
+                        18 + row * 18));
+            }
+        }
 
         InventoryLib.addPlayerInventory(
                 playerInventory,
