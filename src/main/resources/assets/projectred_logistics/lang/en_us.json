@@ -5,5 +5,6 @@
   "block.projectred_logistics.sorting_machine": "Sorting Machine",
   "block.projectred_logistics.manager": "Manager",
   "item.projectred_logistics.restriction_tube": "Restriction Tube",
-  "block.projectred_logistics.buffer": "Buffer"
+  "block.projectred_logistics.buffer": "Buffer",
+  "block.projectred_logistics.item_detector": "Item Detector"
 }

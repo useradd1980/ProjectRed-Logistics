@@ -6,14 +6,17 @@ import codechicken.multipart.api.SimpleMultipartType;
 import io.github.useradd1980.projectredlogistics.ProjectRedLogistics;
 import io.github.useradd1980.projectredlogistics.block.BufferBlock;
 import io.github.useradd1980.projectredlogistics.block.FilterBlock;
+import io.github.useradd1980.projectredlogistics.block.ItemDetectorBlock;
 import io.github.useradd1980.projectredlogistics.block.ManagerBlock;
 import io.github.useradd1980.projectredlogistics.block.SortingMachineBlock;
 import io.github.useradd1980.projectredlogistics.block.entity.BufferBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.FilterBlockEntity;
+import io.github.useradd1980.projectredlogistics.block.entity.ItemDetectorBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.ManagerBlockEntity;
 import io.github.useradd1980.projectredlogistics.block.entity.SortingMachineBlockEntity;
 import io.github.useradd1980.projectredlogistics.menu.BufferMenu;
 import io.github.useradd1980.projectredlogistics.menu.FilterMenu;
+import io.github.useradd1980.projectredlogistics.menu.ItemDetectorMenu;
 import io.github.useradd1980.projectredlogistics.menu.ManagerMenu;
 import io.github.useradd1980.projectredlogistics.menu.SortingMachineMenu;
 import io.github.useradd1980.projectredlogistics.tube.RestrictionTubeItem;
@@ -39,6 +42,7 @@ public final class LogisticsContent {
 
     public static final String ID_BUFFER = "buffer";
     public static final String ID_FILTER = "filter";
+    public static final String ID_ITEM_DETECTOR = "item_detector";
     public static final String ID_SORTING_MACHINE = "sorting_machine";
     public static final String ID_MANAGER = "manager";
     public static final String ID_RESTRICTION_TUBE = "restriction_tube";
@@ -69,6 +73,13 @@ public final class LogisticsContent {
     public static final Supplier<Item> FILTER_ITEM =
             ITEMS.register(ID_FILTER,
                     () -> new BlockItem(FILTER_BLOCK.get(), new Item.Properties()));
+
+    public static final Supplier<Block> ITEM_DETECTOR_BLOCK =
+            BLOCKS.register(ID_ITEM_DETECTOR, ItemDetectorBlock::new);
+
+    public static final Supplier<Item> ITEM_DETECTOR_ITEM =
+            ITEMS.register(ID_ITEM_DETECTOR,
+                    () -> new BlockItem(ITEM_DETECTOR_BLOCK.get(), new Item.Properties()));
 
     public static final Supplier<Block> SORTING_MACHINE_BLOCK =
             BLOCKS.register(ID_SORTING_MACHINE, SortingMachineBlock::new);
@@ -106,6 +117,13 @@ public final class LogisticsContent {
                             .of(FilterBlockEntity::new, FILTER_BLOCK.get())
                             .build(null));
 
+    public static final Supplier<BlockEntityType<ItemDetectorBlockEntity>> ITEM_DETECTOR_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register(
+                    ID_ITEM_DETECTOR,
+                    () -> BlockEntityType.Builder
+                            .of(ItemDetectorBlockEntity::new, ITEM_DETECTOR_BLOCK.get())
+                            .build(null));
+
     public static final Supplier<BlockEntityType<SortingMachineBlockEntity>> SORTING_MACHINE_BLOCK_ENTITY =
             BLOCK_ENTITY_TYPES.register(
                     ID_SORTING_MACHINE,
@@ -125,6 +143,11 @@ public final class LogisticsContent {
 
     public static final Supplier<MenuType<FilterMenu>> FILTER_MENU =
             MENU_TYPES.register(ID_FILTER, () -> CCLMenuType.create(FilterMenu.FACTORY));
+
+    public static final Supplier<MenuType<ItemDetectorMenu>> ITEM_DETECTOR_MENU =
+            MENU_TYPES.register(
+                    ID_ITEM_DETECTOR,
+                    () -> CCLMenuType.create(ItemDetectorMenu.FACTORY));
 
     public static final Supplier<MenuType<SortingMachineMenu>> SORTING_MACHINE_MENU =
             MENU_TYPES.register(
@@ -146,6 +169,7 @@ public final class LogisticsContent {
                             .displayItems((parameters, output) -> {
                                 output.accept(BUFFER_ITEM.get());
                                 output.accept(FILTER_ITEM.get());
+                                output.accept(ITEM_DETECTOR_ITEM.get());
                                 output.accept(SORTING_MACHINE_ITEM.get());
                                 output.accept(MANAGER_ITEM.get());
                                 output.accept(RESTRICTION_TUBE_ITEM.get());
@@ -173,5 +197,10 @@ public final class LogisticsContent {
                 Capabilities.ItemHandler.BLOCK,
                 FILTER_BLOCK_ENTITY.get(),
                 (tile, side) -> tile.getFilterItemHandler());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ITEM_DETECTOR_BLOCK_ENTITY.get(),
+                (tile, side) -> tile.getFilterItemHandler(side));
     }
 }

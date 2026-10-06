@@ -1,0 +1,23 @@
+{
+  "textures": {
+    "particle": "projectred_logistics:block/item_detector_side",
+    "back": "projectred_logistics:block/item_detector_back",
+    "front": "projectred_logistics:block/item_detector_front",
+    "side": "projectred_logistics:block/item_detector_side",
+    "alt": "projectred_logistics:block/item_detector_side_alt"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "down": {"texture": "#back", "cullface": "down"},
+        "up": {"texture": "#front", "cullface": "up"},
+        "north": {"texture": "#alt", "cullface": "north"},
+        "south": {"texture": "#alt", "cullface": "south"},
+        "west": {"texture": "#side", "cullface": "west"},
+        "east": {"texture": "#side", "cullface": "east"}
+      }
+    }
+  ]
+}

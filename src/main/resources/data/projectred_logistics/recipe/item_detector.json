@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "B": {"item": "minecraft:copper_ingot"},
+    "T": {"item": "projectred_expansion:pneumatic_tube"},
+    "R": {"item": "projectred_core:infused_silicon"},
+    "W": {"tag": "minecraft:planks"},
+    "P": {"item": "minecraft:oak_pressure_plate"}
+  },
+  "pattern": [
+    "BTB",
+    "RPR",
+    "WTW"
+  ],
+  "result": {
+    "count": 1,
+    "id": "projectred_logistics:item_detector"
+  }
+}
