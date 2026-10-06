@@ -138,7 +138,9 @@ public class BufferBlockEntity extends ProjectRedBlockEntity {
     }
 
     private int getFrontSide() {
-        return getBlockState().getValue(ProjectRedBlock.SIDE);
+        // ProjectRedBlock.SIDE is the machine's back/orientation side.
+        // RP2's Buffer exposes all 20 slots from the opposite (front) face.
+        return getBlockState().getValue(ProjectRedBlock.SIDE) ^ 1;
     }
 
     private final class BufferItemHandler implements IItemHandler {
